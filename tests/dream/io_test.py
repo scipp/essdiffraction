@@ -14,6 +14,12 @@ def filename():
 @pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/monitor_cave")
 @pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/polarizer/rate")
 @pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/sans_detector")
+@pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/T0_chopper/delay")
+@pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/band_chopper/delay")
+@pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/overlap_chopper/delay")
+@pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/pulse_shaping_chopper1/delay")
+@pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/pulse_shaping_chopper2/delay")
+@pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/source/current")
 def test_load_nexus_loads_file(filename):
     dg = dream.load_nexus(filename)
     assert 'instrument' in dg
@@ -39,6 +45,12 @@ def test_load_nexus_fails_if_entry_not_found(filename):
 @pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/monitor_cave")
 @pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/polarizer/rate")
 @pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/sans_detector")
+@pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/T0_chopper/delay")
+@pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/band_chopper/delay")
+@pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/overlap_chopper/delay")
+@pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/pulse_shaping_chopper1/delay")
+@pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/pulse_shaping_chopper2/delay")
+@pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/source/current")
 def test_load_nexus_folds_detectors_by_default(filename):
     dg = dream.load_nexus(filename)
     instr = dg['instrument']
@@ -54,6 +66,12 @@ def test_load_nexus_folds_detectors_by_default(filename):
 @pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/monitor_cave")
 @pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/polarizer/rate")
 @pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/sans_detector")
+@pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/T0_chopper/delay")
+@pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/band_chopper/delay")
+@pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/overlap_chopper/delay")
+@pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/pulse_shaping_chopper1/delay")
+@pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/pulse_shaping_chopper2/delay")
+@pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/source/current")
 def test_load_nexus_with_disabled_fold(filename):
     dg = dream.load_nexus(filename, fold_detectors=False)
     instr = dg['instrument']
@@ -66,6 +84,12 @@ def test_load_nexus_with_disabled_fold(filename):
 @pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/monitor_cave")
 @pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/polarizer/rate")
 @pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/sans_detector")
+@pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/T0_chopper/delay")
+@pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/band_chopper/delay")
+@pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/overlap_chopper/delay")
+@pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/pulse_shaping_chopper1/delay")
+@pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/pulse_shaping_chopper2/delay")
+@pytest.mark.filterwarnings("ignore:Failed to load /entry/instrument/source/current")
 def test_load_nexus_with_pixel_shape(filename):
     dg = dream.load_nexus(filename, load_pixel_shape=True)
     assert 'instrument' in dg
