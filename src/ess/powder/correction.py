@@ -257,6 +257,31 @@ def _shallow_copy(da: sc.DataArray) -> sc.DataArray:
     return out
 
 
+def compute_pdf_from_structure_factor(
+    s: sc.DataArray,
+    rho0: sc.Variable,
+    r: sc.Variable,
+    filt: bool,
+) -> sc.DataArray:
+    q = s.coords['Q']
+    qm = sc.midpoints(s.coords['Q'])
+
+    qr = q * r
+    v = sc.sin(qr) - qr * sc.cos(qr)
+    v = v[1:] - v[:-1]
+
+    if filt:
+        qm_pi_q_max = qm * sc.constants.pi / q.max()
+        m = sc.sin(qm_pi_q_max) / qm_pi_q_max
+        ms = m * (s - 1)
+    else:
+        ms = s - 1
+
+    c = 1 / (2 * sc.constants.pi * rho0 * r**3)
+    g = 1 + c * (v * ms).sum('q')
+    return g
+
+
 providers = (
     normalize_by_proton_charge,
     normalize_by_vanadium_dspacing,
