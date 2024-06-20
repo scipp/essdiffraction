@@ -261,25 +261,42 @@ def compute_pdf_from_structure_factor(
     s: sc.DataArray,
     rho0: sc.Variable,
     r: sc.Variable,
-    filt: bool,
+    use_filter: bool,
+    filter_bandwidth: float = 1.0,
 ) -> sc.DataArray:
+    for i in range(s.size):
+        if not sc.isnan(s[i]).value:
+            minbound = i
+            break
+    for i in range(s.size - 1, -1, -1):
+        if not sc.isnan(s[i]).value:
+            maxbound = i
+            break
+    s = s[minbound : maxbound + 1]
     q = s.coords['Q']
     qm = sc.midpoints(s.coords['Q'])
 
     qr = q * r
-    v = sc.sin(qr) - qr * sc.cos(qr)
-    v = v[1:] - v[:-1]
+    v = sc.sin(qr * sc.scalar(1, unit='rad')) - qr * sc.cos(
+        qr * sc.scalar(1, unit='rad')
+    )
+    v = v['Q', 1:] - v['Q', :-1]
 
-    if filt:
+    if use_filter:
         qm_pi_q_max = qm * sc.constants.pi / q.max()
-        m = sc.sin(qm_pi_q_max) / qm_pi_q_max
+        m = (
+            filter_bandwidth
+            * sc.sin(filter_bandwidth * qm_pi_q_max * sc.scalar(1, unit='rad'))
+            / qm_pi_q_max
+        )
         ms = m * (s - 1)
     else:
         ms = s - 1
 
     c = 1 / (2 * sc.constants.pi * rho0 * r**3)
-    g = 1 + c * (v * ms).sum('q')
-    return g
+    ms.variances = None
+    g = 1 + c * (v * ms).sum('Q')
+    return sc.DataArray(g.data, coords={'r': r})
 
 
 providers = (
