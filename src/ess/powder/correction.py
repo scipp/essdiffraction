@@ -272,15 +272,14 @@ def compute_pdf_from_structure_factor(
         if not sc.isnan(s[i]).value:
             maxbound = i
             break
+
     s = s[minbound : maxbound + 1]
     q = s.coords['Q']
-    qm = sc.midpoints(s.coords['Q'])
+    qm = sc.midpoints(q)
+    dq = q[1:] - q[:-1]
 
-    qr = q * r
-    v = sc.sin(qr * sc.scalar(1, unit='rad')) - qr * sc.cos(
-        qr * sc.scalar(1, unit='rad')
-    )
-    v = v['Q', 1:] - v['Q', :-1]
+    v = sc.cos(qm * r * sc.scalar(1, unit='rad'))
+    v = v[r.dim, :-1] - v[r.dim, 1:]
 
     if use_filter:
         qm_pi_q_max = qm * sc.constants.pi / q.max()
@@ -293,9 +292,9 @@ def compute_pdf_from_structure_factor(
     else:
         ms = s - 1
 
-    c = 1 / (2 * sc.constants.pi * rho0 * r**3)
+    c = 1 / (2 * sc.constants.pi * rho0)
     ms.variances = None
-    g = 1 + c * (v * ms).sum('Q')
+    g = 1 + c * (v * (ms * dq)).sum('Q')
     return sc.DataArray(g.data, coords={'r': r})
 
 
