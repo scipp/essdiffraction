@@ -290,11 +290,11 @@ def compute_pdf_from_structure_factor(
         )
         ms = m * (s - 1)
     else:
-        ms = s - 1
+        ms = 4 * sc.constants.pi * rho0 * (s - 1)
 
-    c = 1 / (2 * sc.constants.pi * rho0)
+    c = 2 / sc.constants.pi
     ms.variances = None
-    g = 1 + c * (v * (ms * dq)).sum('Q')
+    g = c * (v * (ms * dq)).sum('Q')
     return sc.DataArray(g.data, coords={'r': r})
 
 
