@@ -261,6 +261,7 @@ def compute_pdf_from_structure_factor(
     s: sc.DataArray,
     rho: sc.Variable,
     r: sc.Variable,
+    *,
     use_filter: bool,
 ) -> sc.DataArray:
     '''
@@ -282,7 +283,7 @@ def compute_pdf_from_structure_factor(
     s:
         :math:`S(Q)` with bin-edge coordinate :math:`Q`
     rho:
-        density of sample
+        total number of atoms per unit volume
     r:
         bin-edges of output grid
     use_filter:
@@ -312,7 +313,7 @@ def compute_pdf_from_structure_factor(
     v = sc.cos(qm * r * sc.scalar(1, unit='rad'))
     v = v[r.dim, :-1] - v[r.dim, 1:]
 
-    ioq = (4 * sc.constants.pi * rho) * (s - 1)
+    ioq = (4 * sc.constants.pi * rho) * (s - sc.scalar(1, unit=s.unit))
     ioq.variances = None
     ioq *= dq
 
