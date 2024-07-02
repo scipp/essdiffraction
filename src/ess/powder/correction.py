@@ -257,6 +257,75 @@ def _shallow_copy(da: sc.DataArray) -> sc.DataArray:
     return out
 
 
+def compute_pdf_from_structure_factor(
+    s: sc.DataArray,
+    rho: sc.Variable,
+    r: sc.Variable,
+    use_filter: bool,
+) -> sc.DataArray:
+    '''
+    Computes the pair-distribution-function :math:`D(r)` as defined in
+    `Review: Pair distribution functions from neutron total scattering for the study of local structure in disordered materials <https://www.sciencedirect.com/science/article/pii/S2773183922000374>`_
+    from :math:`S(Q)`.
+
+    The input to the algorithm is a histogram representing :math:`S(Q)`,
+    the density :math:`\\rho`, and a bin-edge grid over :math:`r` for the output.
+
+    In each output bin, the output is computed as:
+
+    .. math::
+        D_{i+\\frac{1}{2}} = \\frac{2}{\\pi(r_{i+1}-r_i)} \\int_{r_i}^{r_{i+1}} \\int_{0}^\\infty i(Q) Q sin(Q r) dQ \\ dr  \\\\
+        \\approx \\frac{2}{\\pi(r_{i+1}-r_i)} \\sum_{j=1}^{N} i(Q_j) (cos(Q_j r_{i})-cos(Q_j r_{i+1})) \\Delta Q_j
+
+    Parameters
+    ----------
+    s:
+        :math:`S(Q)` with bin-edge coordinate :math:`Q`
+    rho:
+        density of sample
+    r:
+        bin-edges of output grid
+    use_filter:
+        if ``True`` the Lorch filter is applied
+
+    Returns
+    -------
+    :
+        :math:`D(r)` for each bin in the provided output grid
+
+    '''  # noqa: E501
+    for i in range(s.size):
+        if not sc.isnan(s[i]).value:
+            minbound = i
+            break
+    for i in range(s.size - 1, -1, -1):
+        if not sc.isnan(s[i]).value:
+            maxbound = i
+            break
+
+    s = s[minbound : maxbound + 1]
+    q = s.coords['Q']
+    qm = sc.midpoints(q)
+    dq = q[1:] - q[:-1]
+    dr = r[1:] - r[:-1]
+
+    v = sc.cos(qm * r * sc.scalar(1, unit='rad'))
+    v = v[r.dim, :-1] - v[r.dim, 1:]
+
+    ioq = (4 * sc.constants.pi * rho) * (s - 1)
+    ioq.variances = None
+    ioq *= dq
+
+    if use_filter:
+        qm_pi_q_max = qm * sc.constants.pi / q.max()
+        ioq *= sc.sin(qm_pi_q_max * sc.scalar(1, unit='rad'))
+        ioq /= qm_pi_q_max
+
+    c = 2 / sc.constants.pi / dr
+    g = c * (v * ioq).sum('Q')
+    return sc.DataArray(g.data, coords={'r': r})
+
+
 providers = (
     normalize_by_proton_charge,
     normalize_by_vanadium_dspacing,
