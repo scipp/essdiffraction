@@ -277,7 +277,22 @@ def compute_pdf_from_structure_factor(
         D_{i+\\frac{1}{2}} = \\frac{2}{\\pi(r_{i+1}-r_i)} \\int_{r_i}^{r_{i+1}} \\int_{0}^\\infty i(Q) Q sin(Q r) dQ \\ dr  \\\\
         \\approx \\frac{2}{\\pi(r_{i+1}-r_i)} \\sum_{j=1}^{N} i(Q_j) (cos(Q_j r_{i})-cos(Q_j r_{i+1})) \\Delta Q_j
 
-    If ``use_filter`` is ``True``` the Lorch filter is applied to the output.
+    Parameters
+    ----------
+    s:
+        :math:`S(Q)` with bin-edge coordinate :math:`Q`
+    rho:
+        density of sample
+    r:
+        bin-edges of output grid
+    use_filter:
+        if ``True`` the Lorch filter is applied
+
+    Returns
+    -------
+    :
+        :math:`D(r)` for each bin in the provided output grid
+
     '''  # noqa: E501
     for i in range(s.size):
         if not sc.isnan(s[i]).value:
