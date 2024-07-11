@@ -13,7 +13,6 @@ from . import (
     grouping,
     masking,
     smoothing,
-    uncertainty,
     transform,
 )
 from .masking import with_pixel_mask_filenames

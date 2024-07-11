@@ -3,15 +3,13 @@
 """Signal transformation algorithms for powder diffraction."""
 
 import scipp as sc
-
-from .uncertainty import UncertaintyBroadcastMode, broadcast_uncertainties
+from ess.reduce.uncertainty import UncertaintyBroadcastMode, broadcast_uncertainties
 
 
 def compute_pdf_from_structure_factor(
     s: sc.DataArray,
-    *,
-    rho: sc.Variable,
     r: sc.Variable,
+    *,
     uncertainty_broadcast_mode=UncertaintyBroadcastMode.drop,
 ) -> sc.DataArray:
     '''
@@ -24,7 +22,6 @@ def compute_pdf_from_structure_factor(
     The inputs to the algorithm are:
 
     * A histogram representing :math:`S(Q)` with :math:`N` bins on a bin-edge grid with :math:`N+1` edges :math:`Q_j` for :math:`j=0\\ldots N`.
-    * The density :math:`\\rho`, the total number of atoms per volume.
     * The bin-edge grid over :math:`r` the output histogram representing :math:`D(r)` will be computed on.
 
     In each output bin, the output is computed as:
@@ -40,8 +37,6 @@ def compute_pdf_from_structure_factor(
     ----------
     s:
         1D DataArray representing :math:`S(Q)` with a bin-edge coordinate called :math:`Q`
-    rho:
-        total number of atoms per unit volume
     r:
         1D array, bin-edges of output grid
     uncertainty_broadcast_mode: UncertaintyBroadcastMode,
@@ -63,7 +58,7 @@ def compute_pdf_from_structure_factor(
     v = v[r.dim, :-1] - v[r.dim, 1:]
 
     ioq = (s - sc.scalar(1.0, unit=s.unit)) * dq
-    ioq = broadcast_uncertainties(ioq, uncertainty_broadcast_mode)
+    ioq = broadcast_uncertainties(ioq, prototype=v, mode=uncertainty_broadcast_mode)
     c = 2 / sc.constants.pi / dr
     g = c * (v * ioq).sum('Q')
     return sc.DataArray(g.data, coords={'r': r})
