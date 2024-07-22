@@ -58,7 +58,15 @@ def compute_pdf_from_structure_factor(
     v = v[r.dim, :-1] - v[r.dim, 1:]
 
     ioq = (s - sc.scalar(1.0, unit=s.unit)) * dq
-    ioq = broadcast_uncertainties(ioq, prototype=v, mode=uncertainty_broadcast_mode)
+    if uncertainty_broadcast_mode in (
+        UncertaintyBroadcastMode.fail,
+        UncertaintyBroadcastMode.drop,
+    ):
+        # avoid scipp uncertainty propagation exception when multiplying v and ioq
+        # the variances are correct after summing over the `Q` dim
+        ioq = ioq.broadcast(sizes=v.sizes).copy()
+    else:
+        ioq = broadcast_uncertainties(ioq, prototype=v, mode=uncertainty_broadcast_mode)
     c = 2 / sc.constants.pi / dr
     g = c * (v * ioq).sum('Q')
     return sc.DataArray(g.data, coords={'r': r})

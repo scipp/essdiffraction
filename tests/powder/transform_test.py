@@ -3,6 +3,7 @@
 import pytest
 import scipp as sc
 import scipp.testing
+from ess.reduce.uncertainty import UncertaintyBroadcastMode
 
 from ess.powder.transform import (
     compute_pdf_from_structure_factor,
@@ -19,15 +20,27 @@ def test_pdf_structure_factor_needs_q_coord():
         )
 
 
-def test_pdf_structure_factor():
+@pytest.mark.parametrize(
+    'uncertainty_mode',
+    [
+        UncertaintyBroadcastMode.drop,
+        UncertaintyBroadcastMode.upper_bound,
+        UncertaintyBroadcastMode.fail,
+    ],
+)
+def test_pdf_structure_factor(uncertainty_mode):
     da = sc.DataArray(
         sc.ones(sizes={'Q': 3}),
         coords={'Q': sc.array(dims='Q', values=[0, 1, 2, 3.0], unit='1/angstrom')},
     )
+    da.variances = da.data.values.copy()
     r = sc.array(dims='r', values=[2, 3, 4, 5.0], unit='angstrom')
-    v = compute_pdf_from_structure_factor(da, r)
+    v = compute_pdf_from_structure_factor(
+        da, r, uncertainty_broadcast_mode=uncertainty_mode
+    )
     assert v.data.unit == '1/angstrom^2'
     sc.testing.assert_identical(v.coords['r'], r)
+    assert v.variances is not None
 
 
 def test_pdf_structure_factor_result_unchanged():
