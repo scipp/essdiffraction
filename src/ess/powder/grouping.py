@@ -35,7 +35,7 @@ def focus_data_dspacing(
     data: DspacingData[RunType], dspacing_bins: DspacingBins
 ) -> FocussedDataDspacing[RunType]:
     return FocussedDataDspacing[RunType](
-        _drop_grouping_and_bin(data, edges={dspacing_bins.dim: dspacing_bins})
+        data.bin({dspacing_bins.dim: dspacing_bins}, dim=data.dims)
     )
 
 
@@ -45,8 +45,9 @@ def focus_data_dspacing_and_two_theta(
     twotheta_bins: TwoThetaBins,
 ) -> FocussedDataDspacingTwoTheta[RunType]:
     return FocussedDataDspacingTwoTheta[RunType](
-        data.bin({twotheta_bins.dim: twotheta_bins}).bin(
-            {dspacing_bins.dim: dspacing_bins}
+        data.bin(
+            {twotheta_bins.dim: twotheta_bins, dspacing_bins.dim: dspacing_bins},
+            dim=data.dims,
         )
     )
 
