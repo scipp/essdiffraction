@@ -25,13 +25,8 @@ def focus_data_dspacing_and_two_theta(
     dspacing_bins: DspacingBins,
     twotheta_bins: TwoThetaBins,
 ) -> FocussedDataDspacingTwoTheta[RunType]:
-    # Note the binning in two steps: Since two_theta is only pixel-dependent it is
-    # more efficient, since it avoids having to map two_theta to each event, or a
-    # costly many-to-many binning operation.
     return FocussedDataDspacingTwoTheta[RunType](
-        data.bin({twotheta_bins.dim: twotheta_bins}).bin(
-            {dspacing_bins.dim: dspacing_bins}
-        )
+        data.bin({twotheta_bins.dim: twotheta_bins, dspacing_bins.dim: dspacing_bins})
     )
 
 
