@@ -2,7 +2,7 @@
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 import pytest
 import sciline
-from ess import dream
+from ess import dream, powder
 
 from ess.dream import nexus
 from ess.powder.types import (
@@ -22,7 +22,7 @@ hr_sans_dims = {'strip', 'other'}
 
 @pytest.fixture()
 def providers():
-    return (*nexus.providers, nexus.dummy_load_sample)
+    return (*nexus.providers, powder.nexus.dummy_load_sample)
 
 
 @pytest.fixture(
