@@ -6,11 +6,24 @@ import scipp as sc
 from ess.reduce.uncertainty import UncertaintyBroadcastMode, broadcast_uncertainties
 
 
+def _covariance_of_matrix_vector_product(A, v):
+    if A.variances is not None:
+        raise ValueError('The expression is not valid if the matrix has variances.')
+    v = sc.variances(v)
+    d, c = A.dims
+    if d == v.dim:
+        c, d = d, c
+    return sc.concat(
+        [(A * (v * A[d, i])).sum(c) for i in range(A.sizes[d])], dim=d + '_2'
+    )
+
+
 def compute_pdf_from_structure_factor(
     s: sc.DataArray,
     r: sc.Variable,
     *,
     uncertainty_broadcast_mode=UncertaintyBroadcastMode.drop,
+    return_covariances=False,
 ) -> sc.DataArray:
     '''
     Compute a pair distribution function from a structure factor.
@@ -58,15 +71,12 @@ def compute_pdf_from_structure_factor(
     v = v[r.dim, :-1] - v[r.dim, 1:]
 
     ioq = (s - sc.scalar(1.0, unit=s.unit)) * dq
-    if uncertainty_broadcast_mode in (
-        UncertaintyBroadcastMode.fail,
-        UncertaintyBroadcastMode.drop,
-    ):
-        # avoid scipp uncertainty propagation exception when multiplying v and ioq
-        # the variances are correct after summing over q.dim
-        ioq = ioq.broadcast(sizes=v.sizes).copy()
-    else:
-        ioq = broadcast_uncertainties(ioq, prototype=v, mode=uncertainty_broadcast_mode)
+    mat_ioq = broadcast_uncertainties(ioq, prototype=v, mode=uncertainty_broadcast_mode)
     c = 2 / sc.constants.pi / dr
-    g = c * (v * ioq).sum(q.dim)
-    return sc.DataArray(g.data, coords={'r': r})
+    g = c * (v * mat_ioq).sum(q.dim)
+    g = sc.DataArray(g.data, coords={'r': r})
+    if return_covariances:
+        cov_g = _covariance_of_matrix_vector_product(c * v, ioq)
+        cov_g = sc.DataArray(cov_g.data, coords={'r': r})
+        return g, cov_g
+    return g
