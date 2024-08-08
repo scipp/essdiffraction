@@ -2,6 +2,7 @@
 # Copyright (c) 2023 Scipp contributors (https://github.com/scipp)
 import pytest
 import sciline
+import scipp as sc
 from ess import dream, powder
 
 from ess.dream import nexus
@@ -54,7 +55,8 @@ def test_can_load_nexus_detector_data(providers, params):
         )
         else bank_dims
     )
-    assert result.bins.size().sum().value == 0
+
+    assert sc.identical(result.data, result.coords['detector_number'])
 
 
 def test_can_load_nexus_monitor_data(providers):
@@ -64,7 +66,7 @@ def test_can_load_nexus_monitor_data(providers):
     )
     pipeline[NeXusMonitorName[Monitor1]] = 'monitor_cave'
     result = pipeline.compute(RawMonitor[SampleRun, Monitor1])
-    assert result.bins.size().sum().value == 0
+    assert result.sizes == {'event_time_zero': 0}
 
 
 def test_load_fails_with_bad_detector_name(providers):
