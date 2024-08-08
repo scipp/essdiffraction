@@ -14,7 +14,9 @@ def _covariance_of_matrix_vector_product(A, v):
         A = A.transpose()
     cov = (sc.sqrt(v) * A).values
     cov = cov @ cov.T
-    return sc.array(dims=[A.dims[0], A.dims[0] + '_2'], values=cov)
+    return sc.array(
+        dims=[A.dims[0], A.dims[0] + '_2'], values=cov, unit=v.unit * A.unit**2
+    )
 
 
 def compute_pdf_from_structure_factor(
