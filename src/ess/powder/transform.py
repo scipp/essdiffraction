@@ -79,6 +79,8 @@ def compute_pdf_from_structure_factor(
     g = sc.DataArray(g.data, coords={'r': r})
     if return_covariances:
         cov_g = _covariance_of_matrix_vector_product(c * v, ioq)
-        cov_g = sc.DataArray(cov_g, coords={d: r for d in cov_g.dims})
+        cov_g = sc.DataArray(
+            cov_g, coords={d: r.rename_dims({r.dim: d}) for d in cov_g.dims}
+        )
         return g, cov_g
     return g
