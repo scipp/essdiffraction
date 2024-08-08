@@ -54,11 +54,14 @@ def compute_pdf_from_structure_factor(
     uncertainty_broadcast_mode: UncertaintyBroadcastMode,
         Choose how uncertainties in S(Q) are broadcast to D(r).
         Defaults to ``UncertaintyBroadcastMode.drop``.
+    return_covariances:
+        bool, if True the second output of the function will be a 2D array representing the covariance
+        matrix of the entries in the first output.
 
     Returns
     -------
     :
-        1D DataArray representing :math:`D(r)` with a bin-edge coordinate called :math:`r` that is the provided output grid
+        1D DataArray representing :math:`D(r)` with a bin-edge coordinate called :math:`r` that is the provided output grid, and optionally a 2D DataArray representing the covariances of :math:`D(r)`.
 
     '''  # noqa: E501
     q = s.coords['Q']
@@ -76,6 +79,6 @@ def compute_pdf_from_structure_factor(
     g = sc.DataArray(g.data, coords={'r': r})
     if return_covariances:
         cov_g = _covariance_of_matrix_vector_product(c * v, ioq)
-        cov_g = sc.DataArray(cov_g, coords={'r': r})
+        cov_g = sc.DataArray(cov_g, coords={d: r for d in cov_g.dims})
         return g, cov_g
     return g
