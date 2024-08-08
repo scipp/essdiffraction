@@ -10,12 +10,11 @@ def _covariance_of_matrix_vector_product(A, v):
     if A.variances is not None:
         raise ValueError('The expression is not valid if the matrix has variances.')
     v = sc.variances(v)
-    d, c = A.dims
-    if d == v.dim:
-        c, d = d, c
-    return sc.concat(
-        [(A * (v * A[d, i])).sum(c) for i in range(A.sizes[d])], dim=d + '_2'
-    )
+    if A.dims[1] != v.dim:
+        A = A.transpose()
+    cov = (sc.sqrt(v) * A).values
+    cov = cov @ cov.T
+    return sc.array(dims=[A.dims[0], A.dims[0] + '_2'], values=cov)
 
 
 def compute_pdf_from_structure_factor(
@@ -77,6 +76,6 @@ def compute_pdf_from_structure_factor(
     g = sc.DataArray(g.data, coords={'r': r})
     if return_covariances:
         cov_g = _covariance_of_matrix_vector_product(c * v, ioq)
-        cov_g = sc.DataArray(cov_g.data, coords={'r': r})
+        cov_g = sc.DataArray(cov_g, coords={'r': r})
         return g, cov_g
     return g

@@ -69,7 +69,7 @@ def test_matrix_vector_covariance():
     C = _covariance_of_matrix_vector_product(A, v)
     a00, a01, a10, a11 = A.values.ravel()
     v0, v1 = v.variances
-    sc.testing.assert_identical(
+    sc.testing.assert_allclose(
         C,
         sc.array(
             dims=['a', 'a_2'],
