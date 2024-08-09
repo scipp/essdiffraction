@@ -29,19 +29,19 @@ def compute_pdf_from_structure_factor(
     '''
     Compute a pair distribution function from a structure factor.
 
-    Computes the pair distribution function :math:`D(r)` as defined in
-    `Review: Pair distribution functions from neutron total scattering for the study of local structure in disordered materials <https://www.sciencedirect.com/science/article/pii/S2773183922000374>`_
+    Computes the pair distribution function :math:`G(r)` as defined in
+    `Review: Pair distribution functions from neutron total scattering for the study of local structure in disordered materials <https://www.sciencedirect.com/science/article/pii/S2773183922000374>`_ (note, in the reference, the pair distribution function is denoted :math:`D(r)`, but since :math:`G(r)` is the more common name, that is what is used here).
     from the overall scattering function :math:`S(Q)`.
 
     The inputs to the algorithm are:
 
     * A histogram representing :math:`S(Q)` with :math:`N` bins on a bin-edge grid with :math:`N+1` edges :math:`Q_j` for :math:`j=0\\ldots N`.
-    * The bin-edge grid over :math:`r` the output histogram representing :math:`D(r)` will be computed on.
+    * The bin-edge grid over :math:`r` the output histogram representing :math:`G(r)` will be computed on.
 
     In each output bin, the output is computed as:
 
     .. math::
-        D_{i+\\frac{1}{2}} &= \\frac{2}{\\pi(r_{i+1}-r_i)} \\int_{r_i}^{r_{i+1}} \\int_{0}^\\infty (S(Q) - 1) Q \\sin(Q r) dQ \\ dr  \\\\
+        G_{i+\\frac{1}{2}} &= \\frac{2}{\\pi(r_{i+1}-r_i)} \\int_{r_i}^{r_{i+1}} \\int_{0}^\\infty (S(Q) - 1) Q \\sin(Q r) dQ \\ dr  \\\\
         &\\approx \\frac{2}{\\pi(r_{i+1}-r_i)} \\sum_{j=0}^{N-1} (S(Q)_{j+\\frac{1}{2}} - 1) (\\cos(\\bar{Q}_{j+\\frac{1}{2}} r_{i})-\\cos(\\bar{Q}_{j+\\frac{1}{2}} r_{i+1})) \\Delta Q_{j+\\frac{1}{2}}
 
     Note that in the above expression the subscript :math:`_{j+\\frac{1}{2}}` is used to denote
@@ -54,7 +54,7 @@ def compute_pdf_from_structure_factor(
     r:
         1D array, bin-edges of output grid
     uncertainty_broadcast_mode: UncertaintyBroadcastMode,
-        Choose how uncertainties in S(Q) are broadcast to D(r).
+        Choose how uncertainties in S(Q) are broadcast to G(r).
         Defaults to ``UncertaintyBroadcastMode.drop``.
     return_covariances:
         bool, if True the second output of the function will be a 2D array representing the covariance
@@ -63,7 +63,7 @@ def compute_pdf_from_structure_factor(
     Returns
     -------
     :
-        1D DataArray representing :math:`D(r)` with a bin-edge coordinate called :math:`r` that is the provided output grid, and optionally a 2D DataArray representing the covariances of :math:`D(r)`.
+        1D DataArray representing :math:`G(r)` with a bin-edge coordinate called :math:`r` that is the provided output grid, and optionally a 2D DataArray representing the covariances of :math:`G(r)`.
 
     '''  # noqa: E501
     q = s.coords['Q']
