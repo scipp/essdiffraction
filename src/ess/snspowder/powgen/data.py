@@ -5,15 +5,15 @@
 
 import scipp as sc
 
-from ...powder.types import (
+from ess.powder.types import (
     AccumulatedProtonCharge,
     CalibrationData,
     CalibrationFilename,
+    DetectorBankSizes,
+    DetectorData,
     Filename,
-    NeXusDetectorDimensions,
     ProtonCharge,
     RawDataAndMetadata,
-    ReducibleDetectorData,
     RunType,
 )
 
@@ -103,7 +103,7 @@ def pooch_load(filename: Filename[RunType]) -> RawDataAndMetadata[RunType]:
 
 def pooch_load_calibration(
     filename: CalibrationFilename,
-    detector_dimensions: NeXusDetectorDimensions,
+    detector_dimensions: DetectorBankSizes,
 ) -> CalibrationData:
     """Load the calibration data for the POWGEN test data."""
     if filename is None:
@@ -119,15 +119,15 @@ def pooch_load_calibration(
 
 
 def extract_raw_data(
-    dg: RawDataAndMetadata[RunType], sizes: NeXusDetectorDimensions
-) -> ReducibleDetectorData[RunType]:
+    dg: RawDataAndMetadata[RunType], sizes: DetectorBankSizes
+) -> DetectorData[RunType]:
     """Return the events from a loaded data group."""
     # Remove the tof binning and dimension, as it is not needed and it gets in the way
     # of masking.
     out = dg["data"].squeeze()
     out.coords.pop("tof", None)
     out = out.fold(dim="spectrum", sizes=sizes)
-    return ReducibleDetectorData[RunType](out)
+    return DetectorData[RunType](out)
 
 
 def extract_proton_charge(dg: RawDataAndMetadata[RunType]) -> ProtonCharge[RunType]:
@@ -136,7 +136,7 @@ def extract_proton_charge(dg: RawDataAndMetadata[RunType]) -> ProtonCharge[RunTy
 
 
 def extract_accumulated_proton_charge(
-    data: ReducibleDetectorData[RunType],
+    data: DetectorData[RunType],
 ) -> AccumulatedProtonCharge[RunType]:
     """Return the stored accumulated proton charge from a loaded data group."""
     return AccumulatedProtonCharge[RunType](data.coords["gd_prtn_chrg"])
