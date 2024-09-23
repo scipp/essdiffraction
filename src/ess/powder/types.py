@@ -8,6 +8,7 @@ pipeline.
 """
 
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any, NewType, TypeVar
 
 import sciline
@@ -28,6 +29,7 @@ DetectorPositionOffset = reduce_gt.DetectorPositionOffset
 EmptyBeamRun = reduce_gt.EmptyBeamRun
 Filename = reduce_gt.Filename
 Incident = reduce_gt.Incident
+CaveMonitor = reduce_gt.Monitor1
 MonitorData = reduce_gt.MonitorData
 MonitorPositionOffset = reduce_gt.MonitorPositionOffset
 MonitorType = reduce_gt.MonitorType
@@ -137,8 +139,25 @@ class MaskedData(sciline.Scope[RunType, sc.DataArray], sc.DataArray):
 MaskedDetectorIDs = NewType("MaskedDetectorIDs", dict[str, sc.Variable])
 """1-D variable listing all masked detector IDs."""
 
+CaveMonitorPosition = NewType("CaveMonitorPosition", sc.Variable)
+"""Position of DREAM's cave monitor."""
 
-class NormalizedByProtonCharge(sciline.Scope[RunType, sc.DataArray], sc.DataArray):
+
+class MonitorFilename(sciline.Scope[RunType, Path], Path):
+    """Filename for monitor data.
+
+    Usually, monitors should be stored in the same file as detector data.
+    But McStas simulations may output monitors and detectors as separate files.
+    """
+
+
+class WavelengthMonitor(
+    sciline.ScopeTwoParams[RunType, MonitorType, sc.DataArray], sc.DataArray
+):
+    """Monitor histogram in wavelength."""
+
+
+class NormalizedRunData(sciline.Scope[RunType, sc.DataArray], sc.DataArray):
     """Data that has been normalized by proton charge."""
 
 
