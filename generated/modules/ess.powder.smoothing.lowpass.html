@@ -1,0 +1,850 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>ess.powder.smoothing.lowpass &#8212; ESSdiffraction</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../../_static/documentation_options.js?v=2e6d0414"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/modules/ess.powder.smoothing.lowpass';</script>
+    <script src="../../_static/anaconda-icon.js?v=461bdc62"></script>
+    <link rel="icon" href="../../_static/favicon.svg"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="ess.powder.types" href="ess.powder.types.html" />
+    <link rel="prev" title="ess.powder.smoothing" href="ess.powder.smoothing.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/logo.svg" class="logo__image only-light" alt="ESSdiffraction - Home"/>
+    <script>document.write(`<img src="../../_static/logo-dark.svg" class="logo__image only-dark" alt="ESSdiffraction - Home"/>`);</script>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../user-guide/index.html">
+    User guide
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../../api-reference/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../developer/index.html">
+    Development
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../about/index.html">
+    About
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://scipp.github.io/essreduce">
+    ESSreduce
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://scipp.github.io/plopp">
+    Plopp
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://scipp.github.io/sciline">
+    Sciline
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://scipp.github.io">
+    Scipp
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://scipp.github.io/scippneutron">
+    ScippNeutron
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-external" href="https://scipp.github.io/scippnexus">
+    ScippNexus
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/scipp/essdiffraction" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/essdiffraction/" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-python fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://anaconda.org/scipp/essdiffraction" title="Conda" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-custom fa-anaconda fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Conda</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../user-guide/index.html">
+    User guide
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../../api-reference/index.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../developer/index.html">
+    Development
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../about/index.html">
+    About
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://scipp.github.io/essreduce">
+    ESSreduce
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://scipp.github.io/plopp">
+    Plopp
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://scipp.github.io/sciline">
+    Sciline
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://scipp.github.io">
+    Scipp
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://scipp.github.io/scippneutron">
+    ScippNeutron
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-external" href="https://scipp.github.io/scippnexus">
+    ScippNexus
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/scipp/essdiffraction" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/essdiffraction/" title="PyPI" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-python fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPI</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://anaconda.org/scipp/essdiffraction" title="Conda" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-custom fa-anaconda fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Conda</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../attributes/ess.powder.providers.html">ess.powder.providers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../attributes/ess.powder.with_pixel_mask_filenames.html">ess.powder.with_pixel_mask_filenames</a></li>
+</ul>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="ess.powder.conversion.html">ess.powder.conversion</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.conversion.add_scattering_coordinates_from_positions.html">ess.powder.conversion.add_scattering_coordinates_from_positions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.conversion.convert_to_dspacing.html">ess.powder.conversion.convert_to_dspacing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.conversion.powder_coordinate_transformation_graph.html">ess.powder.conversion.powder_coordinate_transformation_graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.conversion.to_dspacing_with_calibration.html">ess.powder.conversion.to_dspacing_with_calibration</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="ess.powder.correction.html">ess.powder.correction</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.correction.providers.html">ess.powder.correction.providers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.correction.apply_lorentz_correction.html">ess.powder.correction.apply_lorentz_correction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.correction.merge_calibration.html">ess.powder.correction.merge_calibration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.correction.normalize_by_monitor.html">ess.powder.correction.normalize_by_monitor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.correction.normalize_by_proton_charge.html">ess.powder.correction.normalize_by_proton_charge</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.correction.normalize_by_vanadium_dspacing.html">ess.powder.correction.normalize_by_vanadium_dspacing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.correction.normalize_by_vanadium_dspacing_and_two_theta.html">ess.powder.correction.normalize_by_vanadium_dspacing_and_two_theta</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="ess.powder.filtering.html">ess.powder.filtering</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.filtering.providers.html">ess.powder.filtering.providers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.filtering.filter_events.html">ess.powder.filtering.filter_events</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.filtering.remove_bad_pulses.html">ess.powder.filtering.remove_bad_pulses</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="ess.powder.grouping.html">ess.powder.grouping</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.grouping.providers.html">ess.powder.grouping.providers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.grouping.focus_data_dspacing.html">ess.powder.grouping.focus_data_dspacing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.grouping.focus_data_dspacing_and_two_theta.html">ess.powder.grouping.focus_data_dspacing_and_two_theta</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="ess.powder.smoothing.html">ess.powder.smoothing</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">ess.powder.smoothing.lowpass</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="ess.powder.types.html">ess.powder.types</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.types.CalibrationFilename.html">ess.powder.types.CalibrationFilename</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.types.DspacingBins.html">ess.powder.types.DspacingBins</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.types.OutFilename.html">ess.powder.types.OutFilename</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.types.TwoThetaBins.html">ess.powder.types.TwoThetaBins</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.types.UncertaintyBroadcastMode.html">ess.powder.types.UncertaintyBroadcastMode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.types.ValidTofRange.html">ess.powder.types.ValidTofRange</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.types.CalibrationData.html">ess.powder.types.CalibrationData</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.types.DspacingHistogram.html">ess.powder.types.DspacingHistogram</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.types.ElasticCoordTransformGraph.html">ess.powder.types.ElasticCoordTransformGraph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.types.IofDspacing.html">ess.powder.types.IofDspacing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.types.IofDspacingTwoTheta.html">ess.powder.types.IofDspacingTwoTheta</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.types.MaskedDetectorIDs.html">ess.powder.types.MaskedDetectorIDs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.types.PixelMaskFilename.html">ess.powder.types.PixelMaskFilename</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.types.TofMask.html">ess.powder.types.TofMask</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.types.TwoThetaMask.html">ess.powder.types.TwoThetaMask</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.types.WavelengthMask.html">ess.powder.types.WavelengthMask</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.types.CIFAuthors.html">ess.powder.types.CIFAuthors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.types.ReducedDspacingCIF.html">ess.powder.types.ReducedDspacingCIF</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.types.AccumulatedProtonCharge.html">ess.powder.types.AccumulatedProtonCharge</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.types.DataWithScatteringCoordinates.html">ess.powder.types.DataWithScatteringCoordinates</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.types.DspacingData.html">ess.powder.types.DspacingData</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.types.FilteredData.html">ess.powder.types.FilteredData</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.types.FocussedDataDspacing.html">ess.powder.types.FocussedDataDspacing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.types.FocussedDataDspacingTwoTheta.html">ess.powder.types.FocussedDataDspacingTwoTheta</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.types.MaskedData.html">ess.powder.types.MaskedData</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.types.NormalizedByProtonCharge.html">ess.powder.types.NormalizedByProtonCharge</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.types.ProtonCharge.html">ess.powder.types.ProtonCharge</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.powder.types.RawDataAndMetadata.html">ess.powder.types.RawDataAndMetadata</a></li>
+</ul>
+</details></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../functions/ess.dream.instrument_view.html">ess.dream.instrument_view</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../functions/ess.dream.DreamGeant4Workflow.html">ess.dream.DreamGeant4Workflow</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="ess.dream.data.html">ess.dream.data</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="ess.dream.data.get_path.html">ess.dream.data.get_path</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.dream.data.simulated_diamond_sample.html">ess.dream.data.simulated_diamond_sample</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.dream.data.simulated_empty_can.html">ess.dream.data.simulated_empty_can</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.dream.data.simulated_vanadium_sample.html">ess.dream.data.simulated_vanadium_sample</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.dream.data.simulated_vanadium_sample_incoherent.html">ess.dream.data.simulated_vanadium_sample_incoherent</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="ess.dream.io.html">ess.dream.io</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="ess.dream.io.cif.html">ess.dream.io.cif</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="ess.dream.io.cif.prepare_reduced_dspacing_cif.html">ess.dream.io.cif.prepare_reduced_dspacing_cif</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="ess.dream.io.geant4.html">ess.dream.io.geant4</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="ess.dream.io.geant4.LoadGeant4Workflow.html">ess.dream.io.geant4.LoadGeant4Workflow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ess.dream.io.geant4.dummy_assemble_detector_data.html">ess.dream.io.geant4.dummy_assemble_detector_data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ess.dream.io.geant4.dummy_sample_position.html">ess.dream.io.geant4.dummy_sample_position</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ess.dream.io.geant4.dummy_source_position.html">ess.dream.io.geant4.dummy_source_position</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ess.dream.io.geant4.extract_geant4_detector.html">ess.dream.io.geant4.extract_geant4_detector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ess.dream.io.geant4.geant4_load_calibration.html">ess.dream.io.geant4.geant4_load_calibration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ess.dream.io.geant4.get_calibrated_geant4_detector.html">ess.dream.io.geant4.get_calibrated_geant4_detector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ess.dream.io.geant4.load_geant4_csv.html">ess.dream.io.geant4.load_geant4_csv</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ess.dream.io.geant4.AllRawDetectors.html">ess.dream.io.geant4.AllRawDetectors</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="ess.dream.io.nexus.html">ess.dream.io.nexus</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="ess.dream.io.nexus.LoadNeXusWorkflow.html">ess.dream.io.nexus.LoadNeXusWorkflow</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="ess.snspowder.powgen.html">ess.snspowder.powgen</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="ess.snspowder.powgen.providers.html">ess.snspowder.powgen.providers</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="ess.snspowder.powgen.beamline.html">ess.snspowder.powgen.beamline</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="ess.snspowder.powgen.beamline.providers.html">ess.snspowder.powgen.beamline.providers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ess.snspowder.powgen.beamline.map_detector_to_spectrum.html">ess.snspowder.powgen.beamline.map_detector_to_spectrum</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ess.snspowder.powgen.beamline.powgen_detector_dimensions.html">ess.snspowder.powgen.beamline.powgen_detector_dimensions</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="ess.snspowder.powgen.calibration.html">ess.snspowder.powgen.calibration</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="ess.snspowder.powgen.calibration.load_calibration.html">ess.snspowder.powgen.calibration.load_calibration</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="ess.snspowder.powgen.data.html">ess.snspowder.powgen.data</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="ess.snspowder.powgen.data.providers.html">ess.snspowder.powgen.data.providers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ess.snspowder.powgen.data.extract_accumulated_proton_charge.html">ess.snspowder.powgen.data.extract_accumulated_proton_charge</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ess.snspowder.powgen.data.extract_proton_charge.html">ess.snspowder.powgen.data.extract_proton_charge</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ess.snspowder.powgen.data.extract_raw_data.html">ess.snspowder.powgen.data.extract_raw_data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ess.snspowder.powgen.data.pooch_load.html">ess.snspowder.powgen.data.pooch_load</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ess.snspowder.powgen.data.pooch_load_calibration.html">ess.snspowder.powgen.data.pooch_load_calibration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ess.snspowder.powgen.data.powgen_tutorial_calibration_file.html">ess.snspowder.powgen.data.powgen_tutorial_calibration_file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ess.snspowder.powgen.data.powgen_tutorial_mantid_calibration_file.html">ess.snspowder.powgen.data.powgen_tutorial_mantid_calibration_file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ess.snspowder.powgen.data.powgen_tutorial_mantid_empty_instrument_file.html">ess.snspowder.powgen.data.powgen_tutorial_mantid_empty_instrument_file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ess.snspowder.powgen.data.powgen_tutorial_mantid_sample_file.html">ess.snspowder.powgen.data.powgen_tutorial_mantid_sample_file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ess.snspowder.powgen.data.powgen_tutorial_mantid_vanadium_file.html">ess.snspowder.powgen.data.powgen_tutorial_mantid_vanadium_file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ess.snspowder.powgen.data.powgen_tutorial_sample_file.html">ess.snspowder.powgen.data.powgen_tutorial_sample_file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ess.snspowder.powgen.data.powgen_tutorial_vanadium_file.html">ess.snspowder.powgen.data.powgen_tutorial_vanadium_file</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="ess.snspowder.powgen.instrument_view.html">ess.snspowder.powgen.instrument_view</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="ess.snspowder.powgen.peaks.html">ess.snspowder.powgen.peaks</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="ess.snspowder.powgen.peaks.fit_vanadium_peaks.html">ess.snspowder.powgen.peaks.fit_vanadium_peaks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ess.snspowder.powgen.peaks.theoretical_vanadium_dspacing.html">ess.snspowder.powgen.peaks.theoretical_vanadium_dspacing</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="ess.snspowder.powgen.workflow.html">ess.snspowder.powgen.workflow</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="ess.snspowder.powgen.workflow.PowgenWorkflow.html">ess.snspowder.powgen.workflow.PowgenWorkflow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ess.snspowder.powgen.workflow.default_parameters.html">ess.snspowder.powgen.workflow.default_parameters</a></li>
+</ul>
+</details></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+        <div class="sidebar-primary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#ess.powder.smoothing.lowpass"><code class="docutils literal notranslate"><span class="pre">lowpass()</span></code></a></li>
+</ul>
+  </nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="../../_sources/generated/modules/ess.powder.smoothing.lowpass.rst">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../api-reference/index.html" class="nav-link">API Reference</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="ess.powder.smoothing.html" class="nav-link">ess.powder.smoothing</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page">ess.powder.s...</li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="ess-powder-smoothing-lowpass">
+<h1>ess.powder.smoothing.lowpass<a class="headerlink" href="#ess-powder-smoothing-lowpass" title="Link to this heading">#</a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="ess.powder.smoothing.lowpass">
+<span class="sig-prename descclassname"><span class="pre">ess.powder.smoothing.</span></span><span class="sig-name descname"><span class="pre">lowpass</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">da</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Wn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coord</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/ess/powder/smoothing.html#lowpass"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ess.powder.smoothing.lowpass" title="Link to this definition">#</a></dt>
+<dd><p>Smooth data using a lowpass frequency filter.</p>
+<p>Applies a lowpass Butterworth filter to <cite>da.data</cite> based on the sampling rate
+defined by <cite>coord</cite>.
+See <code class="xref py py-func docutils literal notranslate"><span class="pre">scipp.signal.butter()</span></code> for information on filter design.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>If <cite>coord</cite> is bin-edges, it is first converted to bin-centers using
+<a class="reference external" href="https://scipp.github.io/generated/functions/scipp.midpoints.html#scipp.midpoints" title="(in Scipp v24.9.1)"><code class="xref py py-func docutils literal notranslate"><span class="pre">scipp.midpoints()</span></code></a>.
+This is only valid for linearly-spaced edges.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>da</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://scipp.github.io/generated/classes/scipp.DataArray.html#scipp.DataArray" title="(in Scipp v24.9.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataArray</span></code></a></span>) – Data to smoothen.</p></li>
+<li><p><strong>dim</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – Dimension along which to smooth.</p></li>
+<li><p><strong>coord</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.13)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>, default: <code class="docutils literal notranslate"><span class="pre">None</span></code>) – Name of the coordinate that defines the sampling frequency.
+Defaults to <cite>dim</cite>.</p></li>
+<li><p><strong>N</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Order of the lowpass filter.</p></li>
+<li><p><strong>Wn</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://scipp.github.io/generated/classes/scipp.Variable.html#scipp.Variable" title="(in Scipp v24.9.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Variable</span></code></a></span>) – Critical frequency of the filter.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://scipp.github.io/generated/classes/scipp.DataArray.html#scipp.DataArray" title="(in Scipp v24.9.1)"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataArray</span></code></a></span> – Smoothed <cite>da</cite>.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="xref py py-obj docutils literal notranslate"><span class="pre">scipp.signal.butter</span></code></p>
+</div>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">ess.powder.smoothing</span> <span class="kn">import</span> <span class="n">lowpass</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mf">1.1</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="mf">4.0</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;m&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">sc</span><span class="o">.</span><span class="n">scalar</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;rad/m&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">+=</span> <span class="n">sc</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">sc</span><span class="o">.</span><span class="n">scalar</span><span class="p">(</span><span class="mf">400.0</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;rad/m&#39;</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">noisy</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">coords</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="n">x</span><span class="p">})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">smooth</span> <span class="o">=</span> <span class="n">lowpass</span><span class="p">(</span><span class="n">noisy</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">Wn</span><span class="o">=</span><span class="mi">20</span> <span class="o">/</span> <span class="n">x</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="ess.powder.smoothing.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">ess.powder.smoothing</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="ess.powder.types.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">ess.powder.types</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2024 Scipp contributors.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.0.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item"><!-- This will display the version of the docs -->
+Current ESSdiffraction version: 24.10.0 (<a href="https://github.com/scipp/essdiffraction/releases">older versions</a>).</div>
+      
+        <div class="footer-item">
+<p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.4.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
