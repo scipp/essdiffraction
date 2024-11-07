@@ -14,8 +14,15 @@ and the ICD DREAM interface specification for details.
 """
 
 import sciline
+import scipp as sc
 
-from ess.reduce.nexus.types import DetectorBankSizes
+from ess.reduce.nexus.types import (
+    DetectorBankSizes,
+    DetectorData,
+    Filename,
+    NeXusDetectorName,
+    SampleRun,
+)
 from ess.reduce.nexus.workflow import GenericNeXusWorkflow
 
 DETECTOR_BANK_SIZES = {
@@ -52,3 +59,48 @@ def LoadNeXusWorkflow() -> sciline.Pipeline:
     wf = GenericNeXusWorkflow()
     wf[DetectorBankSizes] = DETECTOR_BANK_SIZES
     return wf
+
+
+def load_detector(filename: str, detector_name: str) -> sc.DataArray:
+    """
+    Load a NeXus file.
+
+    Parameters
+    ----------
+    filename:
+        Path to the NeXus file.
+    detector_name:
+        Name of the detector, *excluding* the "_detector" suffix.
+
+    Returns
+    -------
+    scipp.DataArray
+        The loaded detector data.
+    """
+    wf = LoadNeXusWorkflow()
+    wf[Filename[SampleRun]] = filename
+    wf[NeXusDetectorName] = f'{detector_name}_detector'
+    return wf.compute(DetectorData[SampleRun])
+
+
+def load_all_detectors(filename: str) -> dict:
+    """
+    Load all detectors from a NeXus file.
+
+    Parameters
+    ----------
+    filename:
+        Path to the NeXus file.
+
+    Returns
+    -------
+    :
+        DataGroup with the loaded detectors.
+    """
+    wf = LoadNeXusWorkflow()
+    wf[Filename[SampleRun]] = filename
+    detectors = sc.DataGroup()
+    for name in DETECTOR_BANK_SIZES:
+        wf[NeXusDetectorName] = name
+        detectors[name.removesuffix('_detector')] = wf.compute(DetectorData[SampleRun])
+    return detectors
