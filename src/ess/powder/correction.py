@@ -5,6 +5,10 @@
 from typing import Any
 
 import scipp as sc
+from scippneutron.absorption import compute_transmission_map
+from scippneutron.absorption.cylinder import Cylinder
+from scippneutron.absorption.material import Material
+from scippneutron.atoms import ScatteringParams
 from scippneutron.conversion.graph import beamline, tof
 
 from ess.reduce.uncertainty import broadcast_uncertainties
@@ -19,6 +23,7 @@ from .types import (
     FocussedDataDspacingTwoTheta,
     IofDspacing,
     IofDspacingTwoTheta,
+    NormalizedByAbsorption,
     NormalizedByProtonCharge,
     RunType,
     SampleRun,
@@ -159,6 +164,118 @@ def normalize_by_proton_charge(
         ``data / proton_charge``
     """
     return NormalizedByProtonCharge[RunType](data / proton_charge)
+
+
+def normalize_by_absorption(
+    da: NormalizedByProtonCharge[RunType],
+) -> NormalizedByAbsorption[RunType]:
+    """Correct data by absorption probability.
+
+    Parameters
+    ----------
+    data:
+        Non-corrected data array as events or a histogram.
+
+    Returns
+    -------
+    :
+        ``data / transmission_probability``
+    """
+    # For now hard coding material and sample shape.
+    # In the finished implementation those will be parameters to the function.
+    material = Material(
+        scattering_params=ScatteringParams.for_isotope('V'),
+        effective_sample_number_density=sc.scalar(0.07192, unit='1/angstrom**3'),
+    )
+    sample_shape = Cylinder(
+        symmetry_line=sc.vector([0, 1, 0]),
+        center_of_base=sc.vector([0, -0.5, 0], unit='cm'),
+        radius=sc.scalar(1, unit='cm'),
+        height=sc.scalar(5.0, unit='cm'),
+    )
+
+    # The strategy is a bit messy unfortunately, is there a better way?
+    #
+    # Goal is to evaluate the transmission probability as a function
+    # of pixel position and wavelength and to then scale each event weight
+    # by its associated transmission probability.
+    # Issue is, we cannot evaluate the correction for each pixel x wavelength bin.
+    # Instead we have have to
+    #    1. evaluate the correction factor on a grid,
+    #    2. bin the events on that grid,
+    #    3. apply the correction, and
+    #    4. re-bin the events in their original pixel binning.
+
+    # The grid is defined in a cylindrical coordinate system
+    # because the mantle detector is cylindrical-shaped.
+    def r(x, y, z):
+        return sc.sqrt(x**2 + y**2)
+
+    def th(x, y, z):
+        return sc.atan2(x=x, y=y)
+
+    def z(x, y, z):
+        return z
+
+    # pixel positions in grid coordinate system
+    p = da.coords['position'].flatten(da.coords['position'].dims, to='_')
+    rs = r(p.fields.x, p.fields.y, p.fields.z)
+    ths = th(p.fields.x, p.fields.y, p.fields.z)  # codespell:ignore ths
+    zs = z(p.fields.x, p.fields.y, p.fields.z)
+
+    # grid bin-edges
+    r_be = sc.linspace('r', rs.nanmin(), rs.nanmax(), 5)
+    th_be = sc.linspace('th', ths.nanmin(), ths.nanmax(), 51)  # codespell:ignore ths
+    z_be = sc.linspace('z', zs.nanmin(), zs.nanmax(), 20)
+    wav_be = sc.linspace(
+        'wavelength',
+        da.bins.coords['wavelength'].nanmin(),
+        da.bins.coords['wavelength'].nanmax(),
+        20,
+        unit='angstrom',
+    )
+
+    # grid midpoints
+    rm, thm, zm, wavm = map(sc.midpoints, (r_be, th_be, z_be, wav_be))
+
+    # Transmission fraction evaluated on grid (1)
+    transmission_fraction = compute_transmission_map(
+        sample_shape,
+        material,
+        beam_direction=sc.vector([0, 0, 1.0]),
+        wavelength=wavm,
+        detector_position=sc.spatial.as_vectors(sc.cos(thm) * rm, sc.sin(thm) * rm, zm),
+        quadrature_kind="medium",
+    )
+    transmission_fraction.coords['wavelength'] = wav_be
+    transmission_fraction.coords['r'] = r_be
+    transmission_fraction.coords['th'] = th_be
+    transmission_fraction.coords['z'] = z_be
+
+    # To be able to recreate the pixel binning we have to add a coordinate
+    # keeping track of what event belongs to what pixel.
+    da.bins.coords['detector_id'] = sc.bins_like(
+        da, sc.arange('_', 0, da.size, unit=None).fold(dim='_', sizes=da.sizes)
+    )
+
+    # Events binned on grid (2)
+    da.coords['r'] = rs
+    da.coords['th'] = ths  # codespell:ignore ths
+    da.coords['z'] = zs
+    # Need copy here for some reason
+    # "DimensionError: View over subspan can only be created for contiguous range of data."  #noqa: E501
+    # if we don't.
+    bda = da.copy().bin(r=r_be, th=th_be, z=z_be, wavelength=wav_be)
+    # Events corrected by factor (3)
+    bda /= transmission_fraction.transpose(bda.dims)
+
+    # Re-binning events in original pixel binning (4)
+    bda = bda.bins.concat().group('detector_id').fold(sizes=da.sizes)
+    for c, v in da.coords.items():
+        bda.coords[c] = v
+    for c, m in da.masks.items():
+        bda.masks[c] = m
+    return NormalizedByAbsorption[RunType](bda)
 
 
 def merge_calibration(*, into: sc.DataArray, calibration: sc.Dataset) -> sc.DataArray:
