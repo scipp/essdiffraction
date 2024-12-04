@@ -10,6 +10,8 @@ accessible-pygments==0.0.5
     # via pydata-sphinx-theme
 alabaster==1.0.0
     # via sphinx
+appnope==0.1.4
+    # via ipykernel
 attrs==24.2.0
     # via
     #   jsonschema
@@ -40,7 +42,7 @@ docutils==0.21.2
     #   pydata-sphinx-theme
     #   sphinx
     #   sphinxcontrib-bibtex
-fastjsonschema==2.21.0
+fastjsonschema==2.21.1
     # via nbformat
 idna==3.10
     # via requests
@@ -93,7 +95,7 @@ mistune==3.0.2
     # via nbconvert
 myst-parser==4.0.0
     # via -r docs.in
-nbclient==0.10.0
+nbclient==0.10.1
     # via nbconvert
 nbconvert==7.16.4
     # via nbsphinx
@@ -142,7 +144,7 @@ requests==2.32.3
     # via
     #   pooch
     #   sphinx
-rpds-py==0.21.0
+rpds-py==0.22.1
     # via
     #   jsonschema
     #   referencing
