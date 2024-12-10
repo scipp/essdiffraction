@@ -273,8 +273,8 @@ def normalize_by_absorption(
     bda = bda.bins.concat().group('detector_id').fold(sizes=da.sizes)
     for c, v in da.coords.items():
         bda.coords[c] = v
-    for c, m in da.masks.items():
-        bda.masks[c] = m
+    for m, v in da.masks.items():
+        bda.masks[m] = v
     return NormalizedByAbsorption[RunType](bda)
 
 

@@ -134,6 +134,10 @@ class NormalizedByProtonCharge(sciline.Scope[RunType, sc.DataArray], sc.DataArra
     """Data that has been normalized by proton charge."""
 
 
+class NormalizedByAbsorption(sciline.Scope[RunType, sc.DataArray], sc.DataArray):
+    """Data that has been normalized by absorption correction"""
+
+
 PixelMaskFilename = NewType("PixelMaskFilename", str)
 """Filename of a pixel mask."""
 
