@@ -22,9 +22,12 @@ from ess.powder.types import (
     NeXusDetectorName,
     Position,
     RunType,
+    SampleRun,
+    VanadiumRun,
 )
 from ess.reduce.nexus.types import CalibratedBeamline
 from ess.reduce.nexus.workflow import GenericNeXusWorkflow
+from ess.reduce.workflow import prune_nexus_domain_types
 
 MANTLE_DETECTOR_ID = sc.index(7)
 HIGH_RES_DETECTOR_ID = sc.index(8)
@@ -281,4 +284,13 @@ def LoadGeant4Workflow() -> sciline.Pipeline:
     wf.insert(dummy_assemble_monitor_data)
     wf.insert(dummy_source_position)
     wf.insert(dummy_sample_position)
+
+    wf = prune_nexus_domain_types(
+        wf,
+        targets=(CalibrationData,),
+        targets_per_run=(DetectorData,),
+        targets_per_run_and_monitor=(MonitorData,),
+        run_types=(SampleRun, VanadiumRun),
+        monitor_types=(CaveMonitor,),
+    )
     return wf

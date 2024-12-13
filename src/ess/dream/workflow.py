@@ -18,8 +18,10 @@ from ess.powder.correction import (
 from ess.powder.types import (
     AccumulatedProtonCharge,
     CaveMonitorPosition,  # Should this be a DREAM-only parameter?
+    IofDspacingTwoTheta,
     PixelMaskFilename,
     Position,
+    ReducedTofCIF,
     SampleRun,
     TofMask,
     TwoThetaMask,
@@ -27,7 +29,7 @@ from ess.powder.types import (
     WavelengthMask,
 )
 from ess.reduce.parameter import parameter_mappers
-from ess.reduce.workflow import register_workflow
+from ess.reduce.workflow import prune_nexus_domain_types, register_workflow
 
 from .io.cif import CIFAuthors, prepare_reduced_tof_cif
 from .io.geant4 import LoadGeant4Workflow
@@ -66,6 +68,9 @@ def DreamGeant4Workflow(*, run_norm: RunNormalization) -> sciline.Pipeline:
     for provider in itertools.chain(powder_providers, _dream_providers):
         wf.insert(provider)
     insert_run_normalization(wf, run_norm)
+
+    wf = prune_nexus_domain_types(wf, targets=(ReducedTofCIF, IofDspacingTwoTheta))
+
     for key, value in default_parameters().items():
         wf[key] = value
     wf.typical_outputs = typical_outputs
