@@ -27,6 +27,10 @@ def _make_pooch():
             "DREAM_simple_pwd_workflow/Cave_TOF_Monitor_diam_in_can.dat": "md5:ef24f4a4186c628574046e6629e31611",  # noqa: E501
             "DREAM_simple_pwd_workflow/Cave_TOF_Monitor_van_can.dat": "md5:e63456c347fb36a362a0b5ae2556b3cf",  # noqa: E501
             "DREAM_simple_pwd_workflow/Cave_TOF_Monitor_vana_inc_coh.dat": "md5:701d66792f20eb283a4ce76bae0c8f8f",  # noqa: E501
+            "stap_demo_october_2024/268227_00024779_Si_BC_offset_240_deg.hdf": "md5:d0d89bcae5bee0619e0333adfda57d70",  # noqa: E501
+            "stap_demo_october_2024/268227_00024779_Vana_inc_BC_offset_240_deg_wlgth.hdf": "md5:fbc8bde80c8889eea6ccea6f3f8eb9b8",  # noqa: E501
+            "stap_demo_october_2024/Cave_TOF_Monitor_hf_si_bc240.dat": "md5:8cf6c0a1b42185662ddc579eda07d1e6",  # noqa: E501
+            "stap_demo_october_2024/Cave_TOF_Monitor_hf_vanainc_bc240.dat": "md5:a9d5593d363a1c1fc51eb86757d6fa81",  # noqa: E501
         },
     )
 
@@ -146,3 +150,37 @@ def simulated_monitor_empty_can() -> str:
     This is the DREAM cave monitor for ``simulated_empty_can``.
     """
     return get_path("DREAM_simple_pwd_workflow/Cave_TOF_Monitor_van_can.dat")
+
+
+def stap_demo_2024_si_sample() -> str:
+    """
+    Path to a file containing detector event data for a McStas/Geant4 simulation with a
+    silicon sample.
+    """
+    return get_path("stap_demo_october_2024/268227_00024779_Si_BC_offset_240_deg.hdf")
+
+
+def stap_demo_2024_vanadium_sample() -> str:
+    """
+    Path to a file containing detector event data for a McStas/Geant4 simulation with a
+    vanadium sample.
+    """
+    return get_path(
+        "stap_demo_october_2024/268227_00024779_Vana_inc_BC_offset_240_deg_wlgth.hdf"
+    )
+
+
+def stap_demo_2024_si_monitor() -> str:
+    """
+    Path to a file containing histogrammed monitor data for a McStas/Geant4 simulation
+    with a silicon sample.
+    """
+    return get_path("stap_demo_october_2024/Cave_TOF_Monitor_hf_si_bc240.dat")
+
+
+def stap_demo_2024_vanadium_monitor() -> str:
+    """
+    Path to a file containing histogrammed monitor data for a McStas/Geant4 simulation
+    with a vanadium sample.
+    """
+    return get_path("stap_demo_october_2024/Cave_TOF_Monitor_hf_vanainc_bc240.dat")
