@@ -13,7 +13,7 @@ from ess.powder import providers as powder_providers
 from ess.powder import with_pixel_mask_filenames
 from ess.powder.correction import (
     RunNormalization,
-    insert_run_normalization,
+    select_run_normalization,
 )
 from ess.powder.types import (
     AccumulatedProtonCharge,
@@ -65,7 +65,7 @@ def DreamGeant4Workflow(*, run_norm: RunNormalization) -> sciline.Pipeline:
     wf = LoadGeant4Workflow()
     for provider in itertools.chain(powder_providers, _dream_providers):
         wf.insert(provider)
-    insert_run_normalization(wf, run_norm)
+    wf = select_run_normalization(wf, run_norm)
     for key, value in default_parameters().items():
         wf[key] = value
     wf.typical_outputs = typical_outputs

@@ -155,7 +155,23 @@ class WavelengthMonitor(
 
 
 class NormalizedRunData(sciline.Scope[RunType, sc.DataArray], sc.DataArray):
+    """Data that has been normalized by proton charge or monitor."""
+
+
+class ProtonChargeNormalizedRunData(sciline.Scope[RunType, sc.DataArray], sc.DataArray):
     """Data that has been normalized by proton charge."""
+
+
+class HistogramMonitorNormalizedRunData(
+    sciline.Scope[RunType, sc.DataArray], sc.DataArray
+):
+    """Data that has been normalized by a histogrammed monitor."""
+
+
+class IntegratedMonitorNormalizedRunData(
+    sciline.Scope[RunType, sc.DataArray], sc.DataArray
+):
+    """Data that has been normalized by an integrated monitor."""
 
 
 PixelMaskFilename = NewType("PixelMaskFilename", str)
