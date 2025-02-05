@@ -16,9 +16,12 @@ from .types import (
     DataWithScatteringCoordinates,
     FocussedDataDspacing,
     FocussedDataDspacingTwoTheta,
+    HistogramMonitorNormalizedRunData,
+    IntegratedMonitorNormalizedRunData,
     IofDspacing,
     IofDspacingTwoTheta,
     NormalizedRunData,
+    ProtonChargeNormalizedRunData,
     RunType,
     SampleRun,
     UncertaintyBroadcastMode,
@@ -32,7 +35,7 @@ def normalize_by_monitor_histogram(
     *,
     monitor: WavelengthMonitor[RunType, CaveMonitor],
     uncertainty_broadcast_mode: UncertaintyBroadcastMode,
-) -> NormalizedRunData[RunType]:
+) -> HistogramMonitorNormalizedRunData[RunType]:
     """Normalize detector data by a histogrammed monitor.
 
     Parameters
@@ -55,7 +58,9 @@ def normalize_by_monitor_histogram(
     norm = broadcast_uncertainties(
         monitor, prototype=detector, mode=uncertainty_broadcast_mode
     )
-    return detector.bins / sc.lookup(norm, dim="wavelength")
+    return HistogramMonitorNormalizedRunData[RunType](
+        detector.bins / sc.lookup(norm, dim="wavelength")
+    )
 
 
 def normalize_by_monitor_integrated(
@@ -63,7 +68,7 @@ def normalize_by_monitor_integrated(
     *,
     monitor: WavelengthMonitor[RunType, CaveMonitor],
     uncertainty_broadcast_mode: UncertaintyBroadcastMode,
-) -> NormalizedRunData[RunType]:
+) -> IntegratedMonitorNormalizedRunData[RunType]:
     """Normalize detector data by an integrated monitor.
 
     The monitor is integrated according to
@@ -116,7 +121,7 @@ def normalize_by_monitor_integrated(
     norm = broadcast_uncertainties(
         norm, prototype=detector, mode=uncertainty_broadcast_mode
     )
-    return NormalizedRunData[RunType](detector / norm)
+    return IntegratedMonitorNormalizedRunData[RunType](detector / norm)
 
 
 def _expect_monitor_covers_range_of_detector(
@@ -200,7 +205,7 @@ def normalize_by_vanadium_dspacing_and_two_theta(
 def normalize_by_proton_charge(
     data: DataWithScatteringCoordinates[RunType],
     proton_charge: AccumulatedProtonCharge[RunType],
-) -> NormalizedRunData[RunType]:
+) -> ProtonChargeNormalizedRunData[RunType]:
     """Normalize data by an accumulated proton charge.
 
     Parameters
@@ -215,7 +220,7 @@ def normalize_by_proton_charge(
     :
         ``data / proton_charge``
     """
-    return NormalizedRunData[RunType](data / proton_charge)
+    return ProtonChargeNormalizedRunData[RunType](data / proton_charge)
 
 
 def merge_calibration(*, into: sc.DataArray, calibration: sc.Dataset) -> sc.DataArray:
@@ -325,21 +330,29 @@ class RunNormalization(enum.Enum):
     proton_charge = enum.auto()
 
 
-def insert_run_normalization(
+def select_run_normalization(
     workflow: sciline.Pipeline, run_norm: RunNormalization
-) -> None:
-    """Insert providers for a specific normalization into a workflow."""
+) -> sciline.Pipeline:
+    """Connect a specific normalization to the rest of a workflow."""
     match run_norm:
         case RunNormalization.monitor_histogram:
-            workflow.insert(normalize_by_monitor_histogram)
+            return workflow.override_input(
+                NormalizedRunData[RunType], HistogramMonitorNormalizedRunData[RunType]
+            )
         case RunNormalization.monitor_integrated:
-            workflow.insert(normalize_by_monitor_integrated)
+            return workflow.override_input(
+                NormalizedRunData[RunType], IntegratedMonitorNormalizedRunData[RunType]
+            )
         case RunNormalization.proton_charge:
-            workflow.insert(normalize_by_proton_charge)
+            return workflow.override_input(
+                NormalizedRunData[RunType], ProtonChargeNormalizedRunData[RunType]
+            )
 
 
 providers = (
     normalize_by_proton_charge,
+    normalize_by_monitor_histogram,
+    normalize_by_monitor_integrated,
     normalize_by_vanadium_dspacing,
     normalize_by_vanadium_dspacing_and_two_theta,
 )
