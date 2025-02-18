@@ -14,6 +14,7 @@ from typing import Any, NewType, TypeVar
 import sciline
 import scipp as sc
 from scippneutron.io import cif
+from scippneutron.metadata import Person, Software
 
 from ess.reduce.nexus import types as reduce_t
 from ess.reduce.uncertainty import UncertaintyBroadcastMode as _UncertaintyBroadcastMode
@@ -21,6 +22,7 @@ from ess.reduce.uncertainty import UncertaintyBroadcastMode as _UncertaintyBroad
 # 1 TypeVars used to parametrize the generic parts of the workflow
 
 BackgroundRun = reduce_t.BackgroundRun
+BunkerMonitor = reduce_t.Monitor2
 CalibratedDetector = reduce_t.CalibratedDetector
 CalibratedMonitor = reduce_t.CalibratedMonitor
 DetectorData = reduce_t.DetectorData
@@ -40,9 +42,7 @@ VanadiumRun = reduce_t.VanadiumRun
 DetectorBankSizes = reduce_t.DetectorBankSizes
 
 RunType = TypeVar("RunType", SampleRun, VanadiumRun)
-# Include Monitor2 because a single constraint is not allowed.
-# We will eventually have more than one...
-MonitorType = TypeVar("MonitorType", CaveMonitor, reduce_t.Monitor2)
+MonitorType = TypeVar("MonitorType", CaveMonitor, BunkerMonitor)
 
 
 # 2 Workflow parameters
@@ -181,8 +181,16 @@ TwoThetaMask = NewType("TwoThetaMask", Callable | None)
 WavelengthMask = NewType("WavelengthMask", Callable | None)
 """WavelengthMask is a callable that returns a mask for a given WavelengthData."""
 
+Beamline = reduce_t.Beamline
+"""Beamline metadata."""
 
-CIFAuthors = NewType('CIFAuthors', list[cif.Author])
+ReducerSoftwares = NewType('ReducerSoftware', list[Software])
+"""Pieces of software used to reduce the data."""
+
+Source = reduce_t.Source
+"""Neutron source metadata."""
+
+CIFAuthors = NewType('CIFAuthors', list[Person])
 """List of authors to save to output CIF files."""
 
 ReducedTofCIF = NewType('ReducedTofCIF', cif.CIF)
