@@ -48,8 +48,14 @@ def test_instrument_view_one_module(fake_instrument_data):
     assert hasattr(view, 'slider')
 
 
-def test_instrument_view_slider_not_last_dim(fake_instrument_data):
+def test_instrument_view_slider_not_last_dim_dataarray(fake_instrument_data):
     da = fake_instrument_data['bank1']
+    da = da.transpose(('tof', *(set(da.dims) - {'tof'})))
+    InstrumentView(da, dim='tof')
+
+
+def test_instrument_view_slider_not_last_dim_datagroup(fake_instrument_data):
+    da = fake_instrument_data
     da = da.transpose(('tof', *(set(da.dims) - {'tof'})))
     InstrumentView(da, dim='tof')
 
