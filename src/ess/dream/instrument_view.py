@@ -19,6 +19,7 @@ def instrument_view(
     data: sc.DataArray | sc.DataGroup | dict,
     dim: str | None = None,
     pixel_size: float | sc.Variable | None = None,
+    autoscale: bool = False,
     **kwargs: Any,
 ) -> Box:
     """
@@ -38,6 +39,10 @@ def instrument_view(
         Dimension to use for the slider. No slider will be shown if this is None.
     pixel_size:
         Size of the pixels.
+    autoscale:
+        If ``True``, the color scale will be automatically adjusted to the data as it
+        gets updated. This can be somewhat expensive with many pixels, so it is set to
+        ``False`` by default.
     **kwargs:
         Additional arguments are forwarded to the scatter3d figure
         (see https://scipp.github.io/plopp/generated/plopp.scatter3d.html).
@@ -53,7 +58,9 @@ def instrument_view(
             if dim in v.dims[:-1]:
                 data[k] = v.transpose([d for d in v.dims if d != dim] + [dim])
 
-    view = InstrumentView(data, dim=dim, pixel_size=pixel_size, **kwargs)
+    view = InstrumentView(
+        data, dim=dim, pixel_size=pixel_size, autoscale=autoscale, **kwargs
+    )
     return Box(view.children)
 
 
