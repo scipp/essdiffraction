@@ -47,6 +47,12 @@ def instrument_view(
     if dim and isinstance(data, sc.DataArray) and dim in data.dims[:-1]:
         data = data.transpose([d for d in data.dims if d != dim] + [dim])
 
+    if dim and isinstance(data, sc.DataGroup):
+        data = data.copy(deep=False)
+        for k, v in data.items():
+            if dim in v.dims[:-1]:
+                data[k] = v.transpose([d for d in v.dims if d != dim] + [dim])
+
     view = InstrumentView(data, dim=dim, pixel_size=pixel_size, **kwargs)
     return Box(view.children)
 
