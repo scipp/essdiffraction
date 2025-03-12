@@ -44,12 +44,7 @@ def instrument_view(
     """
     from plopp.widgets import Box
 
-    if (
-        dim
-        and isinstance(data, sc.DataArray | sc.DataGroup)
-        and dim in data.dims
-        and dim != data.dims[-1]
-    ):
+    if dim and isinstance(data, sc.DataArray) and dim in data.dims[:-1]:
         data = data.transpose([d for d in data.dims if d != dim] + [dim])
 
     view = InstrumentView(data, dim=dim, pixel_size=pixel_size, **kwargs)
