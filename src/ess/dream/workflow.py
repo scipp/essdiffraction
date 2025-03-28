@@ -8,6 +8,7 @@ import itertools
 import sciline
 import scipp as sc
 import scippnexus as snx
+from scippneutron.metadata import Software
 
 from ess.powder import providers as powder_providers
 from ess.powder import with_pixel_mask_filenames
@@ -20,20 +21,42 @@ from ess.powder.types import (
     CaveMonitorPosition,  # Should this be a DREAM-only parameter?
     PixelMaskFilename,
     Position,
+    ReducerSoftwares,
     SampleRun,
+    TimeOfFlightLookupTableFilename,
     TofMask,
     TwoThetaMask,
     VanadiumRun,
     WavelengthMask,
 )
+from ess.reduce import time_of_flight
 from ess.reduce.parameter import parameter_mappers
 from ess.reduce.workflow import register_workflow
 
+from .beamline import InstrumentConfiguration
 from .io.cif import CIFAuthors, prepare_reduced_tof_cif
 from .io.geant4 import LoadGeant4Workflow
 from .parameters import typical_outputs
 
-_dream_providers = (prepare_reduced_tof_cif,)
+
+def _get_lookup_table_filename_from_configuration(
+    configuration: InstrumentConfiguration,
+) -> TimeOfFlightLookupTableFilename:
+    from .data import tof_lookup_table_high_flux
+
+    match configuration:
+        case InstrumentConfiguration.high_flux:
+            out = tof_lookup_table_high_flux()
+        case InstrumentConfiguration.high_resolution:
+            raise NotImplementedError("High resolution configuration not yet supported")
+
+    return TimeOfFlightLookupTableFilename(out)
+
+
+_dream_providers = (
+    prepare_reduced_tof_cif,
+    _get_lookup_table_filename_from_configuration,
+)
 
 parameter_mappers[PixelMaskFilename] = with_pixel_mask_filenames
 
@@ -50,12 +73,25 @@ def default_parameters() -> dict:
         Position[snx.NXsource, VanadiumRun]: source_position,
         AccumulatedProtonCharge[SampleRun]: charge,
         AccumulatedProtonCharge[VanadiumRun]: charge,
-        CIFAuthors: CIFAuthors([]),
         TofMask: None,
         WavelengthMask: None,
         TwoThetaMask: None,
         CaveMonitorPosition: sc.vector([0.0, 0.0, -4220.0], unit='mm'),
+        CIFAuthors: CIFAuthors([]),
+        ReducerSoftwares: _collect_reducer_software(),
     }
+
+
+def _collect_reducer_software() -> ReducerSoftwares:
+    return ReducerSoftwares(
+        [
+            Software.from_package_metadata('ess.diffraction'),
+            Software.from_package_metadata('ess.dream'),
+            Software.from_package_metadata('ess.powder'),
+            Software.from_package_metadata('scippneutron'),
+            Software.from_package_metadata('scipp'),
+        ]
+    )
 
 
 def DreamGeant4Workflow(*, run_norm: RunNormalization) -> sciline.Pipeline:
@@ -66,7 +102,9 @@ def DreamGeant4Workflow(*, run_norm: RunNormalization) -> sciline.Pipeline:
     for provider in itertools.chain(powder_providers, _dream_providers):
         wf.insert(provider)
     insert_run_normalization(wf, run_norm)
-    for key, value in default_parameters().items():
+    for key, value in itertools.chain(
+        default_parameters().items(), time_of_flight.default_parameters().items()
+    ):
         wf[key] = value
     wf.typical_outputs = typical_outputs
     return wf

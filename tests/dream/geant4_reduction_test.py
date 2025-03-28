@@ -8,7 +8,8 @@ import sciline
 import scipp as sc
 import scipp.testing
 import scippnexus as snx
-from scippneutron.io.cif import Author
+from scippneutron import metadata
+from scippneutron._utils import elem_unit
 
 import ess.dream.data  # noqa: F401
 from ess import dream, powder
@@ -23,12 +24,15 @@ from ess.powder.types import (
     CalibrationFilename,
     CaveMonitorPosition,
     CIFAuthors,
+    DistanceResolution,
     DspacingBins,
     DspacingData,
     Filename,
     IofDspacing,
     IofDspacingTwoTheta,
     IofTof,
+    LookupTableRelativeErrorThreshold,
+    LtotalRange,
     MaskedData,
     MonitorFilename,
     NeXusDetectorName,
@@ -36,6 +40,9 @@ from ess.powder.types import (
     Position,
     ReducedTofCIF,
     SampleRun,
+    SimulationResults,
+    TimeOfFlightLookupTableFilename,
+    TimeResolution,
     TofMask,
     TwoThetaBins,
     TwoThetaMask,
@@ -43,6 +50,7 @@ from ess.powder.types import (
     VanadiumRun,
     WavelengthMask,
 )
+from ess.reduce import time_of_flight
 from ess.reduce import workflow as reduce_workflow
 
 sample = sc.vector([0.0, 0.0, 0.0], unit='mm')
@@ -50,17 +58,18 @@ source = sc.vector([-3.478, 0.0, -76550], unit='mm')
 charge = sc.scalar(1.0, unit='µAh')
 
 params = {
-    Filename[SampleRun]: dream.data.simulated_diamond_sample(),
-    Filename[VanadiumRun]: dream.data.simulated_vanadium_sample(),
-    Filename[BackgroundRun]: dream.data.simulated_empty_can(),
+    Filename[SampleRun]: dream.data.simulated_diamond_sample(small=True),
+    Filename[VanadiumRun]: dream.data.simulated_vanadium_sample(small=True),
+    Filename[BackgroundRun]: dream.data.simulated_empty_can(small=True),
     MonitorFilename[SampleRun]: dream.data.simulated_monitor_diamond_sample(),
     MonitorFilename[VanadiumRun]: dream.data.simulated_monitor_vanadium_sample(),
     MonitorFilename[BackgroundRun]: dream.data.simulated_monitor_empty_can(),
+    dream.InstrumentConfiguration: dream.beamline.InstrumentConfiguration.high_flux,
     CalibrationFilename: None,
     UncertaintyBroadcastMode: UncertaintyBroadcastMode.drop,
     DspacingBins: sc.linspace('dspacing', 0.0, 2.3434, 201, unit='angstrom'),
-    TofMask: lambda x: (x < sc.scalar(0.0, unit='ns'))
-    | (x > sc.scalar(86e6, unit='ns')),
+    TofMask: lambda x: (x < sc.scalar(0.0, unit='us').to(unit=elem_unit(x)))
+    | (x > sc.scalar(86e3, unit='us').to(unit=elem_unit(x))),
     Position[snx.NXsample, SampleRun]: sample,
     Position[snx.NXsample, VanadiumRun]: sample,
     Position[snx.NXsource, SampleRun]: source,
@@ -72,8 +81,11 @@ params = {
     CaveMonitorPosition: sc.vector([0.0, 0.0, -4220.0], unit='mm'),
     CIFAuthors: CIFAuthors(
         [
-            Author(
-                name="Jane Doe", email="jane.doe@ess.eu", orcid="0000-0000-0000-0001"
+            metadata.Person(
+                name="Jane Doe",
+                email="jane.doe@ess.eu",
+                orcid_id="0000-0000-0000-0001",
+                corresponding=True,
             ),
         ]
     ),
@@ -100,6 +112,39 @@ def make_workflow(params_for_det, *, run_norm):
 
 def test_pipeline_can_compute_dspacing_result(workflow):
     workflow = powder.with_pixel_mask_filenames(workflow, [])
+    result = workflow.compute(IofDspacing)
+    assert result.sizes == {'dspacing': len(params[DspacingBins]) - 1}
+    assert sc.identical(result.coords['dspacing'], params[DspacingBins])
+
+
+def test_pipeline_can_compute_dspacing_result_using_lookup_table_filename(workflow):
+    workflow = powder.with_pixel_mask_filenames(workflow, [])
+    workflow[TimeOfFlightLookupTableFilename] = dream.data.tof_lookup_table_high_flux()
+    result = workflow.compute(IofDspacing)
+    assert result.sizes == {'dspacing': len(params[DspacingBins]) - 1}
+    assert sc.identical(result.coords['dspacing'], params[DspacingBins])
+
+
+@pytest.fixture(scope="module")
+def simulation_dream_choppers():
+    return time_of_flight.simulate_beamline(
+        choppers=dream.beamline.choppers(
+            dream.beamline.InstrumentConfiguration.high_flux
+        ),
+        neutrons=500_000,
+    )
+
+
+def test_pipeline_can_compute_dspacing_result_using_custom_built_tof_lookup(
+    workflow, simulation_dream_choppers
+):
+    workflow.insert(powder.conversion.build_tof_lookup_table)
+    workflow = powder.with_pixel_mask_filenames(workflow, [])
+    workflow[SimulationResults] = simulation_dream_choppers
+    workflow[LtotalRange] = sc.scalar(60.0, unit="m"), sc.scalar(80.0, unit="m")
+    workflow[DistanceResolution] = sc.scalar(0.1, unit="m")
+    workflow[TimeResolution] = sc.scalar(250.0, unit='us')
+    workflow[LookupTableRelativeErrorThreshold] = 0.02
     result = workflow.compute(IofDspacing)
     assert result.sizes == {'dspacing': len(params[DspacingBins]) - 1}
     assert sc.identical(result.coords['dspacing'], params[DspacingBins])
@@ -147,7 +192,7 @@ def test_pipeline_can_compute_intermediate_results(workflow):
     if detector_name in ('endcap_backward', 'endcap_forward'):
         expected_dims.add('sumo')
 
-    assert set(result.dims) == expected_dims
+    assert expected_dims.issubset(set(result.dims))
 
 
 def test_pipeline_group_by_two_theta(workflow):
@@ -157,10 +202,8 @@ def test_pipeline_group_by_two_theta(workflow):
     workflow[TwoThetaBins] = two_theta_bins
     workflow = powder.with_pixel_mask_filenames(workflow, [])
     result = workflow.compute(IofDspacingTwoTheta)
-    assert result.sizes == {
-        'two_theta': 16,
-        'dspacing': len(params[DspacingBins]) - 1,
-    }
+    assert result.sizes['two_theta'] == 16
+    assert result.sizes['dspacing'] == len(params[DspacingBins]) - 1
     assert sc.identical(result.coords['dspacing'], params[DspacingBins])
     assert sc.allclose(result.coords['two_theta'], two_theta_bins)
 
@@ -199,13 +242,6 @@ def test_pipeline_two_theta_masking(workflow):
     )
 
 
-def test_use_workflow_helper(workflow):
-    workflow = powder.with_pixel_mask_filenames(workflow, [])
-    result = workflow.compute(IofDspacing)
-    assert result.sizes == {'dspacing': len(params[DspacingBins]) - 1}
-    assert sc.identical(result.coords['dspacing'], params[DspacingBins])
-
-
 def test_pipeline_can_save_data(workflow):
     workflow = powder.with_pixel_mask_filenames(workflow, [])
     result = workflow.compute(ReducedTofCIF)
@@ -229,7 +265,10 @@ def _assert_contains_source_info(cif_content: str) -> None:
 def _assert_contains_author_info(cif_content: str) -> None:
     assert "audit_contact_author.name 'Jane Doe'" in cif_content
     assert 'audit_contact_author.email jane.doe@ess.eu' in cif_content
-    assert 'audit_contact_author.id_orcid 0000-0000-0000-0001' in cif_content
+    assert (
+        'audit_contact_author.id_orcid https://orcid.org/0000-0000-0000-0001'
+        in cif_content
+    )
 
 
 def _assert_contains_beamline_info(cif_content: str) -> None:

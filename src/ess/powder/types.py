@@ -14,8 +14,10 @@ from typing import Any, NewType, TypeVar
 import sciline
 import scipp as sc
 from scippneutron.io import cif
+from scippneutron.metadata import Person, Software
 
 from ess.reduce.nexus import types as reduce_t
+from ess.reduce.time_of_flight import types as tof_t
 from ess.reduce.uncertainty import UncertaintyBroadcastMode as _UncertaintyBroadcastMode
 
 # 1 TypeVars used to parametrize the generic parts of the workflow
@@ -39,6 +41,16 @@ Position = reduce_t.Position
 VanadiumRun = reduce_t.VanadiumRun
 
 DetectorBankSizes = reduce_t.DetectorBankSizes
+
+PulsePeriod = tof_t.PulsePeriod
+PulseStride = tof_t.PulseStride
+PulseStrideOffset = tof_t.PulseStrideOffset
+DistanceResolution = tof_t.DistanceResolution
+TimeResolution = tof_t.TimeResolution
+LtotalRange = tof_t.LtotalRange
+LookupTableRelativeErrorThreshold = tof_t.LookupTableRelativeErrorThreshold
+TimeOfFlightLookupTable = tof_t.TimeOfFlightLookupTable
+SimulationResults = tof_t.SimulationResults
 
 RunType = TypeVar("RunType", SampleRun, VanadiumRun)
 MonitorType = TypeVar("MonitorType", CaveMonitor, BunkerMonitor)
@@ -87,6 +99,10 @@ class AccumulatedProtonCharge(sciline.Scope[RunType, sc.Variable], sc.Variable):
 
 CalibrationData = NewType("CalibrationData", sc.Dataset | None)
 """Detector calibration data."""
+
+
+class TofData(sciline.Scope[RunType, sc.DataArray], sc.DataArray):
+    """Data with time-of-flight coordinate."""
 
 
 class DataWithScatteringCoordinates(sciline.Scope[RunType, sc.DataArray], sc.DataArray):
@@ -180,11 +196,40 @@ TwoThetaMask = NewType("TwoThetaMask", Callable | None)
 WavelengthMask = NewType("WavelengthMask", Callable | None)
 """WavelengthMask is a callable that returns a mask for a given WavelengthData."""
 
+Beamline = reduce_t.Beamline
+"""Beamline metadata."""
 
-CIFAuthors = NewType('CIFAuthors', list[cif.Author])
+ReducerSoftwares = NewType('ReducerSoftware', list[Software])
+"""Pieces of software used to reduce the data."""
+
+Source = reduce_t.Source
+"""Neutron source metadata."""
+
+CIFAuthors = NewType('CIFAuthors', list[Person])
 """List of authors to save to output CIF files."""
 
-ReducedTofCIF = NewType('ReducedTofCIF', cif.CIF)
+ReducedTofCIF = NewType("ReducedTofCIF", cif.CIF)
 """Reduced data in time-of-flight, ready to be saved to a CIF file."""
+
+
+class DetectorLtotal(sciline.Scope[RunType, sc.Variable], sc.Variable):
+    """Total path length of neutrons from source to detector (L1 + L2)."""
+
+
+class MonitorLtotal(
+    sciline.ScopeTwoParams[RunType, MonitorType, sc.Variable], sc.Variable
+):
+    """Total path length of neutrons from source to monitor."""
+
+
+class TofMonitorData(
+    sciline.ScopeTwoParams[RunType, MonitorType, sc.DataArray], sc.DataArray
+):
+    """Monitor data with time-of-flight coordinate."""
+
+
+TimeOfFlightLookupTableFilename = NewType("TimeOfFlightLookupTableFilename", str)
+"""Filename of the time-of-flight lookup table."""
+
 
 del sc, sciline, NewType, TypeVar

@@ -4,9 +4,12 @@
 import numpy as np
 import sciline
 import scipp as sc
+import scippneutron as scn
 import scippnexus as snx
+from scippneutron.metadata import ESS_SOURCE
 
 from ess.powder.types import (
+    Beamline,
     CalibratedDetector,
     CalibratedMonitor,
     CalibrationData,
@@ -14,15 +17,18 @@ from ess.powder.types import (
     CaveMonitor,
     CaveMonitorPosition,
     DetectorData,
+    DetectorLtotal,
     Filename,
     MonitorData,
     MonitorFilename,
+    MonitorLtotal,
     MonitorType,
     NeXusComponent,
     NeXusDetectorName,
     Position,
     RunType,
     SampleRun,
+    Source,
     VanadiumRun,
 )
 from ess.reduce.nexus.types import CalibratedBeamline
@@ -85,14 +91,14 @@ def get_calibrated_geant4_detector(
     Since the Geant4 detectors already have computed positions as well as logical shape,
     this just extracts the relevant event data.
     """
-    return detector['events'].copy(deep=False)
+    return detector["events"].copy(deep=False)
 
 
 def _load_raw_events(file_path: str) -> sc.DataArray:
     table = sc.io.load_csv(
         file_path, sep="\t", header_parser="bracket", data_columns=[]
     )
-    table.coords['sumo'] = table.coords['det ID']
+    table.coords["sumo"] = table.coords["det ID"]
     table.coords.pop("lambda", None)
     table = table.rename_dims(row="event")
     return sc.DataArray(
@@ -119,7 +125,7 @@ def _group(detectors: dict[str, sc.DataArray]) -> dict[str, sc.DataGroup]:
             res = da.group("sumo", *elements)
         else:
             res = da.group(*elements)
-        res.coords['position'] = res.bins.coords.pop('position').bins.mean()
+        res.coords["position"] = res.bins.coords.pop("position").bins.mean()
         res.bins.coords.pop("sector", None)
         res.bins.coords.pop("sumo", None)
         return res
@@ -243,18 +249,57 @@ def geant4_load_calibration(filename: CalibrationFilename) -> CalibrationData:
     return CalibrationData(None)
 
 
-def dummy_assemble_detector_data(
+def assemble_detector_data(
     detector: CalibratedBeamline[RunType],
 ) -> DetectorData[RunType]:
-    """Dummy assembly of detector data, detector already contains neutron data."""
-    return DetectorData[RunType](detector)
+    """
+    In the raw data, the tofs extend beyond 71ms, this is thus not an event_time_offset.
+    We convert the detector data to data which resembles NeXus data, with
+    event_time_zero and event_time_offset coordinates.
+
+    Parameters
+    ----------
+    detector:
+        The calibrated detector data.
+    """
+
+    out = detector.copy(deep=False)
+    unit = 'ns'
+    period = (1.0 / sc.scalar(14.0, unit='Hz')).to(unit=unit)
+    # Add a event_time_zero coord for each event. We need to pick a start time.
+    # The actual value does not matter. We chose the random date of
+    # November 3rd, 2024 12:48:00.
+    start = sc.datetime("2024-11-03T12:48:00.000000000")
+    out.bins.coords['event_time_zero'] = (
+        period * (detector.bins.coords['tof'].to(unit='ns', copy=False) // period)
+    ).to(dtype=int) + start
+    out.bins.coords['event_time_offset'] = out.bins.coords['tof'] % period.to(
+        unit=detector.bins.coords['tof'].bins.unit
+    )
+    graph = scn.conversion.graph.beamline.beamline(scatter=True)
+    return DetectorData[RunType](
+        out.bins.drop_coords('tof').transform_coords(
+            "Ltotal", graph=graph, keep_intermediate=True
+        )
+    )
 
 
-def dummy_assemble_monitor_data(
+def assemble_monitor_data(
     monitor: CalibratedMonitor[RunType, MonitorType],
 ) -> MonitorData[RunType, MonitorType]:
-    """Dummy assembly of monitor data, monitor already contains neutron data."""
-    return MonitorData[RunType, MonitorType](monitor)
+    """
+    Dummy assembly of monitor data, monitor already contains neutron data.
+    We simply add a Ltotal coordinate necessary to calculate the time-of-flight.
+
+    Parameters
+    ----------
+    monitor:
+        The calibrated monitor data.
+    """
+    graph = scn.conversion.graph.beamline.beamline(scatter=False)
+    return MonitorData[RunType, MonitorType](
+        monitor.transform_coords("Ltotal", graph=graph)
+    )
 
 
 def dummy_source_position() -> Position[snx.NXsource, RunType]:
@@ -269,6 +314,40 @@ def dummy_sample_position() -> Position[snx.NXsample, RunType]:
     )
 
 
+def extract_detector_ltotal(detector: DetectorData[RunType]) -> DetectorLtotal[RunType]:
+    """
+    Extract Ltotal from the detector data.
+    TODO: This is a temporary implementation. We should instead read the positions
+    separately from the event data, so we don't need to re-load the positions every time
+    new events come in while streaming live data.
+    """
+    return DetectorLtotal[RunType](detector.coords["Ltotal"])
+
+
+def extract_monitor_ltotal(
+    monitor: MonitorData[RunType, MonitorType],
+) -> MonitorLtotal[RunType, MonitorType]:
+    """
+    Extract Ltotal from the monitor data.
+    TODO: This is a temporary implementation. We should instead read the positions
+    separately from the event data, so we don't need to re-load the positions every time
+    new events come in while streaming live data.
+    """
+    return MonitorLtotal[RunType, MonitorType](monitor.coords["Ltotal"])
+
+
+def dream_beamline() -> Beamline:
+    return Beamline(
+        name="DREAM",
+        facility="ESS",
+        site="ESS",
+    )
+
+
+def ess_source() -> Source:
+    return ESS_SOURCE
+
+
 def LoadGeant4Workflow() -> sciline.Pipeline:
     """
     Workflow for loading NeXus data.
@@ -281,8 +360,12 @@ def LoadGeant4Workflow() -> sciline.Pipeline:
     wf.insert(load_mcstas_monitor)
     wf.insert(geant4_load_calibration)
     wf.insert(get_calibrated_geant4_detector)
-    wf.insert(dummy_assemble_detector_data)
-    wf.insert(dummy_assemble_monitor_data)
+    wf.insert(assemble_detector_data)
+    wf.insert(assemble_monitor_data)
     wf.insert(dummy_source_position)
     wf.insert(dummy_sample_position)
+    wf.insert(extract_detector_ltotal)
+    wf.insert(extract_monitor_ltotal)
+    wf.insert(dream_beamline)
+    wf.insert(ess_source)
     return wf
