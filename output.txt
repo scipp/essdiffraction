@@ -1,0 +1,25 @@
+Results of doctest builder run on 2025-05-27 11:02:03
+=====================================================
+
+Document: generated/modules/ess.powder.smoothing.lowpass
+--------------------------------------------------------
+1 items passed all tests:
+   6 tests in default
+6 tests in 1 items.
+6 passed and 0 failed.
+Test passed.
+
+Document: generated/modules/ess.powder.types.Beamline
+-----------------------------------------------------
+1 items passed all tests:
+   3 tests in default
+3 tests in 1 items.
+3 passed and 0 failed.
+Test passed.
+
+Doctest summary
+===============
+    9 tests
+    0 failures in tests
+    0 failures in setup code
+    0 failures in cleanup code
