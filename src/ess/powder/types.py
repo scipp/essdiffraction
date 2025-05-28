@@ -8,8 +8,9 @@ pipeline.
 """
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, NewType, TypeVar
+from typing import Any, Generic, NewType, TypeVar
 
 import sciline
 import scipp as sc
@@ -99,7 +100,23 @@ class AccumulatedProtonCharge(sciline.Scope[RunType, sc.Variable], sc.Variable):
 CalibrationData = NewType("CalibrationData", sc.Dataset | None)
 """Detector calibration data."""
 
+# DetectorCountsTof
+# DetectorCountsWavelength?
+# WavelengthDetector
+# DspacingCounts
+# CountsDspacing
 
+# FocussedCounts/Data
+#
+# IofDspacing
+
+#
+# Normalized -> Scaled?
+
+
+# TODO
+# - compute dspacing together with wavelength?
+# - DspacingData removed?
 class DataWithScatteringCoordinates(sciline.Scope[RunType, sc.DataArray], sc.DataArray):
     """Data with scattering coordinates computed for all events: wavelength, 2theta,
     d-spacing."""
@@ -183,6 +200,14 @@ class NormalizedRunData(sciline.Scope[RunType, sc.DataArray], sc.DataArray):
     """Data that has been normalized by proton charge."""
 
 
+class NormalizedDspacing(sciline.Scope[RunType, sc.DataArray], sc.DataArray):
+    """Data that has been normalized by proton charge and summed over two theta."""
+
+
+class NormalizedDspacingTwoTheta(sciline.Scope[RunType, sc.DataArray], sc.DataArray):
+    """Data that has been normalized by proton charge and grouped into two theta bins."""
+
+
 PixelMaskFilename = NewType("PixelMaskFilename", str)
 """Filename of a pixel mask."""
 
@@ -223,6 +248,17 @@ ReducedTofCIF = NewType("ReducedTofCIF", cif.CIF)
 
 ReducedEmptyCanSubtractedTofCIF = NewType("ReducedEmptyCanSubtractedTofCIF", cif.CIF)
 """Reduced data in time-of-flight, ready to be saved to a CIF file."""
+
+
+@dataclass(frozen=True)
+class KeepEvents(Generic[RunType]):
+    """
+    Flag indicating whether the workflow should keep all events when focussing data.
+
+    If False, data will be histogrammed when focussing.
+    """
+
+    value: bool
 
 
 del sc, sciline, NewType, TypeVar

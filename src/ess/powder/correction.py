@@ -5,6 +5,7 @@
 import enum
 from typing import TypeVar
 
+import numpy as np
 import sciline
 import scipp as sc
 
@@ -22,6 +23,8 @@ from .types import (
     FocussedDataDspacingTwoTheta,
     IofDspacing,
     IofDspacingTwoTheta,
+    NormalizedDspacing,
+    NormalizedDspacingTwoTheta,
     NormalizedRunData,
     RunType,
     SampleRun,
@@ -31,8 +34,34 @@ from .types import (
 )
 
 
+def _hack_wavelength(da: sc.DataArray) -> sc.DataArray:
+    dspacing = sc.midpoints(da.coords['dspacing'])
+    two_theta = sc.midpoints(da.coords['two_theta'])
+    wavelength = dspacing * 2 * sc.sin(two_theta / 2)
+    # wavelength = sc.where(
+    #    da.data == sc.scalar(0.0, unit=da.unit),
+    #    sc.scalar(np.nan, unit=wavelength.unit),
+    #    wavelength,
+    # )
+    return da.assign_coords(wavelength=wavelength)
+    from .conversion import powder_coordinate_transformation_graph
+
+    wavelength = (
+        da.assign_coords(
+            {
+                dim: sc.midpoints(da.coords[dim])
+                for dim in {'dspacing', 'two_theta'}
+                if da.coords.is_edges(dim)
+            }
+        )
+        .transform_coords('wavelength', graph=powder_coordinate_transformation_graph())
+        .coords['wavelength']
+    )
+    return da.assign_coords(wavelength=wavelength)
+
+
 def normalize_by_monitor_histogram(
-    detector: DataWithScatteringCoordinates[RunType],
+    detector: FocussedDataDspacingTwoTheta[RunType],
     *,
     monitor: WavelengthMonitor[RunType, CaveMonitor],
     uncertainty_broadcast_mode: UncertaintyBroadcastMode,
@@ -53,13 +82,20 @@ def normalize_by_monitor_histogram(
     :
         `detector` normalized by a monitor.
     """
-    _expect_monitor_covers_range_of_detector(
-        detector=detector, monitor=monitor, dim="wavelength"
-    )
+    if detector.bins is None:
+        detector = _hack_wavelength(detector)
+    # _expect_monitor_covers_range_of_detector(
+    #    detector=detector, monitor=monitor, dim="wavelength"
+    # )
     norm = broadcast_uncertainties(
         monitor, prototype=detector, mode=uncertainty_broadcast_mode
     )
-    return NormalizedRunData[RunType](detector.bins / sc.lookup(norm, dim="wavelength"))
+    lut = sc.lookup(norm, dim="wavelength")
+    if detector.bins is None:
+        result = detector / lut[detector.coords['wavelength']]
+    else:
+        result = detector.bins / lut
+    return NormalizedRunData[RunType](result)
 
 
 def normalize_by_monitor_integrated(
@@ -144,7 +180,7 @@ def _normalize_by_vanadium(
     vanadium: sc.DataArray,
     uncertainty_broadcast_mode: UncertaintyBroadcastMode,
 ) -> sc.DataArray:
-    norm = vanadium.hist()
+    norm = vanadium.hist() if vanadium.bins is not None else vanadium
     norm = broadcast_uncertainties(
         norm, prototype=data, mode=uncertainty_broadcast_mode
     )
@@ -162,8 +198,8 @@ _RunTypeNoVanadium = TypeVar("_RunTypeNoVanadium", SampleRun, EmptyCanRun)
 
 
 def normalize_by_vanadium_dspacing(
-    data: FocussedDataDspacing[_RunTypeNoVanadium],
-    vanadium: FocussedDataDspacing[VanadiumRun],
+    data: NormalizedDspacing[_RunTypeNoVanadium],
+    vanadium: NormalizedDspacing[VanadiumRun],
     uncertainty_broadcast_mode: UncertaintyBroadcastMode,
 ) -> IofDspacing[_RunTypeNoVanadium]:
     """
@@ -192,8 +228,8 @@ def normalize_by_vanadium_dspacing(
 
 
 def normalize_by_vanadium_dspacing_and_two_theta(
-    data: FocussedDataDspacingTwoTheta[_RunTypeNoVanadium],
-    vanadium: FocussedDataDspacingTwoTheta[VanadiumRun],
+    data: NormalizedDspacingTwoTheta[_RunTypeNoVanadium],
+    vanadium: NormalizedDspacingTwoTheta[VanadiumRun],
     uncertainty_broadcast_mode: UncertaintyBroadcastMode,
 ) -> IofDspacingTwoTheta[_RunTypeNoVanadium]:
     """

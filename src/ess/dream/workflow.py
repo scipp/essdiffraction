@@ -19,7 +19,9 @@ from ess.powder.correction import (
 from ess.powder.types import (
     AccumulatedProtonCharge,
     CaveMonitorPosition,  # Should this be a DREAM-only parameter?
+    CaveMonitor,
     EmptyCanRun,
+    KeepEvents,
     PixelMaskFilename,
     Position,
     ReducerSoftware,
@@ -31,7 +33,9 @@ from ess.powder.types import (
     WavelengthMask,
 )
 from ess.reduce import time_of_flight
+from ess.reduce.nexus.types import NeXusName
 from ess.reduce.parameter import parameter_mappers
+from ess.reduce.time_of_flight import GenericTofWorkflow
 from ess.reduce.workflow import register_workflow
 
 from .beamline import InstrumentConfiguration
@@ -73,6 +77,9 @@ def default_parameters() -> dict:
     source_position = sc.vector([-3.478, 0.0, -76550], unit="mm")
     charge = sc.scalar(1.0, unit="µAh")
     return {
+        KeepEvents[SampleRun]: KeepEvents[SampleRun](True),
+        KeepEvents[VanadiumRun]: KeepEvents[VanadiumRun](False),
+        KeepEvents[EmptyCanRun]: KeepEvents[EmptyCanRun](False),
         Position[snx.NXsample, SampleRun]: sample_position,
         Position[snx.NXsample, VanadiumRun]: sample_position,
         Position[snx.NXsample, EmptyCanRun]: sample_position,
@@ -99,6 +106,33 @@ def _collect_reducer_software() -> ReducerSoftware:
             Software.from_package_metadata('scipp'),
         ]
     )
+
+
+def DreamPowderWorkflow(*, run_norm: RunNormalization) -> sciline.Pipeline:
+    """
+    Workflow with default parameters for the Dream Geant4 simulation.
+
+    Parameters
+    ----------
+    run_norm:
+        Select how to normalize each run (sample, vanadium, etc.).
+
+    Returns
+    -------
+    :
+        A workflow object for DREAM.
+    """
+    wf = GenericTofWorkflow(run_types=[SampleRun], monitor_types=[CaveMonitor])
+    for provider in itertools.chain(powder_providers, _dream_providers):
+        wf.insert(provider)
+    wf[NeXusName[CaveMonitor]] = "monitor_cave"
+    insert_run_normalization(wf, run_norm)
+    for key, value in itertools.chain(
+        default_parameters().items(), time_of_flight.default_parameters().items()
+    ):
+        wf[key] = value
+    wf.typical_outputs = typical_outputs
+    return wf
 
 
 def DreamGeant4Workflow(*, run_norm: RunNormalization) -> sciline.Pipeline:

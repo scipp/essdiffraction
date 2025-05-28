@@ -220,7 +220,7 @@ def convert_to_dspacing(
             if key in out.coords.keys():
                 out.coords.set_aligned(key, False)
     out.bins.coords.pop("tof", None)
-    out.bins.coords.pop("wavelength", None)
+    # out.bins.coords.pop("wavelength", None)
     return DspacingData[RunType](out)
 
 
