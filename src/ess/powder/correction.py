@@ -14,7 +14,6 @@ from ._util import event_or_outer_coord
 from .types import (
     AccumulatedProtonCharge,
     CaveMonitor,
-    DataWithScatteringCoordinates,
     EmptyCanRun,
     EmptyCanSubtractedIofDspacing,
     EmptyCanSubtractedIofDspacingTwoTheta,
@@ -22,9 +21,10 @@ from .types import (
     FocussedDataDspacingTwoTheta,
     IofDspacing,
     IofDspacingTwoTheta,
-    NormalizedRunData,
+    ReducedCountsDspacing,
     RunType,
     SampleRun,
+    ScaledCountsDspacing,
     UncertaintyBroadcastMode,
     VanadiumRun,
     WavelengthMonitor,
@@ -32,11 +32,11 @@ from .types import (
 
 
 def normalize_by_monitor_histogram(
-    detector: DataWithScatteringCoordinates[RunType],
+    detector: ReducedCountsDspacing[RunType],
     *,
     monitor: WavelengthMonitor[RunType, CaveMonitor],
     uncertainty_broadcast_mode: UncertaintyBroadcastMode,
-) -> NormalizedRunData[RunType]:
+) -> ScaledCountsDspacing[RunType]:
     """Normalize detector data by a histogrammed monitor.
 
     Parameters
@@ -53,21 +53,23 @@ def normalize_by_monitor_histogram(
     :
         `detector` normalized by a monitor.
     """
-    _expect_monitor_covers_range_of_detector(
-        detector=detector, monitor=monitor, dim="wavelength"
-    )
     norm = broadcast_uncertainties(
         monitor, prototype=detector, mode=uncertainty_broadcast_mode
     )
-    return NormalizedRunData[RunType](detector.bins / sc.lookup(norm, dim="wavelength"))
+    lut = sc.lookup(norm, dim="wavelength")
+    if detector.bins is None:
+        result = detector / lut[detector.coords['wavelength']]
+    else:
+        result = detector.bins / lut
+    return ScaledCountsDspacing[RunType](result)
 
 
 def normalize_by_monitor_integrated(
-    detector: DataWithScatteringCoordinates[RunType],
+    detector: ReducedCountsDspacing[RunType],
     *,
     monitor: WavelengthMonitor[RunType, CaveMonitor],
     uncertainty_broadcast_mode: UncertaintyBroadcastMode,
-) -> NormalizedRunData[RunType]:
+) -> ScaledCountsDspacing[RunType]:
     """Normalize detector data by an integrated monitor.
 
     The monitor is integrated according to
@@ -99,17 +101,27 @@ def normalize_by_monitor_integrated(
         raise sc.CoordError(
             f"Monitor coordinate '{dim}' must be bin-edges to integrate the monitor."
         )
-    _expect_monitor_covers_range_of_detector(
-        detector=detector, monitor=monitor, dim=dim
-    )
 
     # Clip `monitor` to the range of `detector`, where the bins at the boundary
     # may extend past the detector range (how label-based indexing works).
-    det_coord = (
-        detector.coords[dim] if dim in detector.coords else detector.bins.coords[dim]
-    )
+    if dim not in detector.coords:
+        det_coord = detector.bins.coords.get(dim)
+    else:
+        # In this case, we have the wavelength at the bin centers. There is thus some
+        # imprecision in the definition of the wavelength limits, since the detector
+        # bins strictly speaking extend beyond these limits.
+        counts = detector if detector.bins is None else detector.bins.size()
+        flat_counts = counts.flatten(to='dummy')
+        with_counts = flat_counts[flat_counts.data > sc.scalar(0.0, unit=counts.unit)]
+        det_coord = with_counts.coords[dim]
+
     lo = det_coord.nanmin()
     hi = det_coord.nanmax()
+    if monitor.coords[dim].min() > lo or monitor.coords[dim].max() < hi:
+        raise ValueError(
+            "Cannot normalize by monitor: The wavelength range of the monitor is "
+            "smaller than the range of the detector."
+        )
     monitor = monitor[dim, lo:hi]
     # Strictly limit `monitor` to the range of `detector`.
     edges = sc.concat([lo, monitor.coords[dim][1:-1], hi], dim=dim)
@@ -120,23 +132,7 @@ def normalize_by_monitor_integrated(
     norm = broadcast_uncertainties(
         norm, prototype=detector, mode=uncertainty_broadcast_mode
     )
-    return NormalizedRunData[RunType](detector / norm)
-
-
-def _expect_monitor_covers_range_of_detector(
-    *, detector: sc.DataArray, monitor: sc.DataArray, dim: str
-) -> None:
-    det_coord = (
-        detector.coords[dim] if detector.bins is None else detector.bins.coords[dim]
-    )
-    if (
-        monitor.coords[dim].min() > det_coord.min()
-        or monitor.coords[dim].max() < det_coord.max()
-    ):
-        raise ValueError(
-            "Cannot normalize by monitor: The wavelength range of the monitor is "
-            "smaller than the range of the detector."
-        )
+    return ScaledCountsDspacing[RunType](detector / norm)
 
 
 def _normalize_by_vanadium(
@@ -144,7 +140,7 @@ def _normalize_by_vanadium(
     vanadium: sc.DataArray,
     uncertainty_broadcast_mode: UncertaintyBroadcastMode,
 ) -> sc.DataArray:
-    norm = vanadium.hist()
+    norm = vanadium.hist() if vanadium.bins is not None else vanadium
     norm = broadcast_uncertainties(
         norm, prototype=data, mode=uncertainty_broadcast_mode
     )
@@ -223,9 +219,9 @@ def normalize_by_vanadium_dspacing_and_two_theta(
 
 
 def normalize_by_proton_charge(
-    data: DataWithScatteringCoordinates[RunType],
+    data: ReducedCountsDspacing[RunType],
     proton_charge: AccumulatedProtonCharge[RunType],
-) -> NormalizedRunData[RunType]:
+) -> ScaledCountsDspacing[RunType]:
     """Normalize data by an accumulated proton charge.
 
     Parameters
@@ -240,7 +236,7 @@ def normalize_by_proton_charge(
     :
         ``data / proton_charge``
     """
-    return NormalizedRunData[RunType](data / proton_charge)
+    return ScaledCountsDspacing[RunType](data / proton_charge)
 
 
 def merge_calibration(*, into: sc.DataArray, calibration: sc.Dataset) -> sc.DataArray:
