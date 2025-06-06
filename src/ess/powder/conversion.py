@@ -252,9 +252,12 @@ def convert_monitor_to_wavelength(
         **scn.conversion.graph.beamline.beamline(scatter=False),
         **scn.conversion.graph.tof.elastic("tof"),
     }
-    return WavelengthMonitor[RunType, MonitorType](
-        monitor.transform_coords("wavelength", graph=graph, keep_intermediate=False)
-    )
+    mon = monitor.transform_coords("wavelength", graph=graph, keep_intermediate=False)
+    if mon.bins is not None:
+        # TODO Should be a workflow parameter.
+        wavelength = sc.linspace('wavelength', 0, 10, num=1000, unit='Angstrom')
+        mon = mon.hist(wavelength=wavelength, dim=mon.dims)
+    return WavelengthMonitor[RunType, MonitorType](mon)
 
 
 providers = (
