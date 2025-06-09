@@ -25,6 +25,7 @@ from .types import (
     MonitorType,
     RunType,
     SampleRun,
+    WavelengthBins,
     WavelengthMonitor,
 )
 
@@ -246,7 +247,7 @@ def convert_reduced_to_empty_can_subtracted_tof(
 
 
 def convert_monitor_to_wavelength(
-    monitor: MonitorTofData[RunType, MonitorType],
+    monitor: MonitorTofData[RunType, MonitorType], wavelength: WavelengthBins
 ) -> WavelengthMonitor[RunType, MonitorType]:
     graph = {
         **scn.conversion.graph.beamline.beamline(scatter=False),
@@ -254,8 +255,6 @@ def convert_monitor_to_wavelength(
     }
     mon = monitor.transform_coords("wavelength", graph=graph, keep_intermediate=False)
     if mon.bins is not None:
-        # TODO Should be a workflow parameter.
-        wavelength = sc.linspace('wavelength', 0, 10, num=1000, unit='Angstrom')
         mon = mon.hist(wavelength=wavelength, dim=mon.dims)
     return WavelengthMonitor[RunType, MonitorType](mon)
 
