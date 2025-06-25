@@ -3,7 +3,6 @@
 import h5py
 import numpy as np
 import scipp as sc
-from scipp import constants
 
 
 def _load_h5(group: h5py.Group | str, *paths: str):
@@ -71,31 +70,25 @@ def load_beer_mcstas(f):
     da.coords['x'].unit = 'm'
     da.coords['y'].unit = 'm'
     da.coords['t'].unit = 's'
-    da.coords['L1'] = sc.norm(
+
+    z = sc.norm(da.coords['detector_position'] - da.coords['sample_position'])
+    L1 = sc.norm(
         da.coords['sample_position'] - da.coords['chopper_position']
     ) - sc.scalar(0.854, unit='m')  # note! fudge factor
-    da.coords['L2'] = sc.norm(
-        da.coords['detector_position'] - da.coords['sample_position']
-    )
+    L2 = sc.sqrt(da.coords['x'] ** 2 + da.coords['y'] ** 2 + z**2)
+    da.coords['L'] = L1 + L2
     da.coords['two_theta'] = sc.scalar(np.pi / 2, unit='rad') + sc.atan2(
-        y=da.coords['x'], x=da.coords['L2']
-    )
-    da.coords['sin_theta'] = sc.sin(da.coords['two_theta'] / 2)
-    da.coords['L'] = da.coords['L1'] + sc.sqrt(
-        da.coords['x'] ** 2 + da.coords['y'] ** 2 + da.coords['L2'] ** 2
+        y=da.coords['x'], x=z
     )
 
+    # Save some space
+    da.coords.pop('x')
+    da.coords.pop('y')
+    da.coords.pop('n')
+    da.coords.pop('id')
+
     # TODO: approximate t0 should depend on chopper information
-    da.coords['t0'] = sc.scalar(0.0066, unit='s')
-    da.coords['coarse_d'] = (
-        constants.h
-        / constants.m_n
-        * (da.coords['t'] - da.coords['t0'])
-        / da.coords['sin_theta']
-        / da.coords['L']
-        / 2
-    ).to(unit='angstrom')
-    da.coords['sin_theta_L'] = da.coords['sin_theta'] * da.coords['L']
+    da.coords['approximate_t0'] = sc.scalar(0.0066, unit='s')
 
     # TODO: limits should be user configurable
     da.masks['two_theta'] = (
