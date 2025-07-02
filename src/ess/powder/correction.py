@@ -40,6 +40,14 @@ def normalize_by_monitor_histogram(
 ) -> ScaledCountsDspacing[RunType]:
     """Normalize detector data by a histogrammed monitor.
 
+    TODO
+
+    mantid: https://docs.mantidproject.org/nightly/algorithms/NormaliseToMonitor-v1.html#bin-by-bin-mode
+
+    .. math::
+
+        M_i = \\sum_{i=0}^{N-1}\\, m_i (x_{i+1} - x_i) I(x_i, x_{i+1}),
+
     Parameters
     ----------
     detector:
@@ -54,14 +62,27 @@ def normalize_by_monitor_histogram(
     :
         `detector` normalized by a monitor.
     """
-    norm = broadcast_uncertainties(
-        monitor, prototype=detector, mode=uncertainty_broadcast_mode
+    dim = monitor.dim
+
+    clipped = _clip_monitor_to_detector_range(monitor=monitor, detector=detector)
+    coord = clipped.coords[dim]
+    delta_w = coord[1:] - coord[-1]
+    total_monitor_weight = clipped.sum()
+    total_monitor_weight /= delta_w.sum()
+    total_monitor_weight = broadcast_uncertainties(
+        total_monitor_weight,
+        prototype=clipped,
+        mode=uncertainty_broadcast_mode,
     )
-    lut = sc.lookup(norm, dim="wavelength")
+    delta_w *= total_monitor_weight
+    clipped /= delta_w
+    norm = broadcast_uncertainties(
+        clipped, prototype=detector, mode=uncertainty_broadcast_mode
+    )
+
+    lut = sc.lookup(norm, dim=dim)
     if detector.bins is None:
-        result = (
-            detector / lut[sc.midpoints(detector.coords['wavelength'], dim='dspacing')]
-        )
+        result = detector / lut[sc.midpoints(detector.coords[dim], dim='dspacing')]
     else:
         result = detector.bins / lut
     return ScaledCountsDspacing[RunType](result)
@@ -99,6 +120,19 @@ def normalize_by_monitor_integrated(
     :
         `detector` normalized by a monitor.
     """
+    clipped = _clip_monitor_to_detector_range(monitor=monitor, detector=detector)
+    coord = clipped.coords[clipped.dim]
+    clipped.data *= coord[1:] - coord[:-1]
+    norm = sc.sum(clipped.data)
+    norm = broadcast_uncertainties(
+        norm, prototype=detector, mode=uncertainty_broadcast_mode
+    )
+    return ScaledCountsDspacing[RunType](detector / norm)
+
+
+def _clip_monitor_to_detector_range(
+    *, monitor: sc.DataArray, detector: sc.DataArray
+) -> sc.DataArray:
     dim = monitor.dim
     if not monitor.coords.is_edges(dim):
         raise sc.CoordError(
@@ -142,14 +176,7 @@ def normalize_by_monitor_integrated(
     monitor = monitor[dim, lo:hi]
     # Strictly limit `monitor` to the range of `detector`.
     edges = sc.concat([lo, monitor.coords[dim][1:-1], hi], dim=dim)
-    monitor = sc.rebin(monitor, {dim: edges})
-
-    coord = monitor.coords[dim]
-    norm = sc.sum(monitor.data * (coord[1:] - coord[:-1]))
-    norm = broadcast_uncertainties(
-        norm, prototype=detector, mode=uncertainty_broadcast_mode
-    )
-    return ScaledCountsDspacing[RunType](detector / norm)
+    return sc.rebin(monitor, {dim: edges})
 
 
 def _normalize_by_vanadium(
