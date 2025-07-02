@@ -1,3 +1,4 @@
+import numpy as np
 import scipp as sc
 
 from .types import DetectorTofData, RunType, StreakClusteredData
@@ -21,13 +22,36 @@ def compute_tof_in_each_cluster(
     '''
     sin_theta_L = sc.sin(da.bins.coords['two_theta'] / 2) * da.bins.coords['L']
     t = da.bins.coords['t']
-    for _ in range(3):
+    for _ in range(5):
         s, t0 = _linear_regression_by_bin(sin_theta_L, t, da)
+
+        s_left = sc.array(dims=s.dims, values=np.roll(s.values, 1), unit=s.unit)
+        s_right = sc.array(dims=s.dims, values=np.roll(s.values, -1), unit=s.unit)
+        t0_left = sc.array(dims=t0.dims, values=np.roll(t0.values, 1), unit=t0.unit)
+        t0_right = sc.array(dims=t0.dims, values=np.roll(t0.values, -1), unit=t0.unit)
+
+        # Distance from point to line through cluster
+        distance_to_self = sc.abs(sc.values(t0) + sc.values(s) * sin_theta_L - t)
+        # Distance from this cluster line to next before cluster line
+        distance_self_to_left = sc.abs(
+            sc.values(t0_left)
+            + sc.values(s_left) * sin_theta_L
+            - (sc.values(t0) + sc.values(s) * sin_theta_L)
+        )
+        # Distance from this cluster line to next after cluster line
+        distance_self_to_right = sc.abs(
+            sc.values(t0_right)
+            + sc.values(s_right) * sin_theta_L
+            - (sc.values(t0) + sc.values(s) * sin_theta_L)
+        )
+
         da = da.bins.assign_masks(
-            too_far_from_center=(
-                sc.abs(sc.values(t0) + sc.values(s) * sin_theta_L - t)
-                > sc.scalar(3e-4, unit='s')
-            ).data
+            # TODO: Find suitable masking parameters for other chopper settings
+            too_far_from_center=(distance_to_self > sc.scalar(3e-4, unit='s')).data,
+            too_close_to_other=(
+                (distance_self_to_left < sc.scalar(8e-4, unit='s'))
+                | (distance_self_to_right < sc.scalar(8e-4, unit='s'))
+            ).data,
         )
 
     da = da.assign_coords(t0=sc.values(t0).data)
