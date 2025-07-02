@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2025 Scipp contributors (https://github.com/scipp)
 import h5py
-import numpy as np
 import scipp as sc
 
 
@@ -44,7 +43,7 @@ def load_beer_mcstas(f):
         'NXentry/NXdetector/bank01_events_dat_list_p_x_y_n_id_t/events',
         'NXentry/simulation/Param',
         '/entry1/instrument/components/0189_sampleMantid/Position',
-        '/entry1/instrument/components/0020_cMCC/Position',
+        '/entry1/instrument/components/0017_cMCA/Position',
     )
     da = sc.DataArray(
         sc.array(dims=['events'], values=events[:, 0], variances=events[:, 0] ** 2),
@@ -72,14 +71,10 @@ def load_beer_mcstas(f):
     da.coords['t'].unit = 's'
 
     z = sc.norm(da.coords['detector_position'] - da.coords['sample_position'])
-    L1 = sc.norm(
-        da.coords['sample_position'] - da.coords['chopper_position']
-    ) - sc.scalar(0.854, unit='m')  # note! fudge factor
+    L1 = sc.norm(da.coords['sample_position'] - da.coords['chopper_position'])
     L2 = sc.sqrt(da.coords['x'] ** 2 + da.coords['y'] ** 2 + z**2)
     da.coords['L'] = L1 + L2
-    da.coords['two_theta'] = sc.scalar(np.pi / 2, unit='rad') + sc.atan2(
-        y=da.coords['x'], x=z
-    )
+    da.coords['two_theta'] = sc.acos(-da.coords['x'] / L2)
 
     # Save some space
     da.coords.pop('x')
@@ -88,7 +83,7 @@ def load_beer_mcstas(f):
     da.coords.pop('id')
 
     # TODO: approximate t0 should depend on chopper information
-    da.coords['approximate_t0'] = sc.scalar(0.0066, unit='s')
+    da.coords['approximate_t0'] = sc.scalar(0.006, unit='s')
 
     # TODO: limits should be user configurable
     da.masks['two_theta'] = (
