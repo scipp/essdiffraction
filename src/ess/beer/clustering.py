@@ -10,14 +10,16 @@ def cluster_events_by_streak(da: DetectorData[RunType]) -> StreakClusteredData[R
     da.coords['coarse_d'] = (
         constants.h
         / constants.m_n
-        * (da.coords['t'] - da.coords['approximate_t0'])
+        * (da.coords['event_time_offset'] - da.coords['approximate_t0'])
         / sc.sin(da.coords['two_theta'] / 2)
-        / da.coords['L']
+        / da.coords['L0']
         / 2
     ).to(unit='angstrom')
 
     h = da.hist(coarse_d=1000)
-    i_peaks, _ = find_peaks(h.data.values, height=40, distance=3)
+    i_peaks, _ = find_peaks(
+        h.data.values, height=(2 * sc.values(h).median()).value, distance=3
+    )
     i_valleys, _ = find_peaks(
         h.data.values.max() - h.data.values, distance=3, height=h.data.values.max() / 2
     )

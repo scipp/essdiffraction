@@ -73,7 +73,9 @@ def load_beer_mcstas(f):
     z = sc.norm(da.coords['detector_position'] - da.coords['sample_position'])
     L1 = sc.norm(da.coords['sample_position'] - da.coords['chopper_position'])
     L2 = sc.sqrt(da.coords['x'] ** 2 + da.coords['y'] ** 2 + z**2)
-    da.coords['L'] = L1 + L2
+    # Source is assumed to be at the origin
+    da.coords['L0'] = L1 + L2 + sc.norm(da.coords['chopper_position'])
+    da.coords['Ltotal'] = L1 + L2
     da.coords['two_theta'] = sc.acos(-da.coords['x'] / L2)
 
     # Save some space
@@ -83,11 +85,12 @@ def load_beer_mcstas(f):
     da.coords.pop('id')
 
     # TODO: approximate t0 should depend on chopper information
-    da.coords['approximate_t0'] = sc.scalar(0.006, unit='s')
+    da.coords['approximate_t0'] = sc.scalar(6e-3, unit='s')
 
     # TODO: limits should be user configurable
     da.masks['two_theta'] = (
         da.coords['two_theta'] >= sc.scalar(105, unit='deg').to(unit='rad')
     ) | (da.coords['two_theta'] <= sc.scalar(75, unit='deg').to(unit='rad'))
 
+    da.coords['event_time_offset'] = da.coords.pop('t')
     return da

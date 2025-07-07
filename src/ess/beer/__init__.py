@@ -8,7 +8,11 @@ Components for BEER
 import importlib.metadata
 
 from .io import load_beer_mcstas
-from .workflow import BeerMcStasWorkflow, default_parameters
+from .workflow import (
+    BeerMcStasWorkflow,
+    BeerMcStasWorkflowKnownPeaks,
+    default_parameters,
+)
 
 try:
     __version__ = importlib.metadata.version("essdiffraction")
@@ -19,6 +23,7 @@ del importlib
 
 __all__ = [
     'BeerMcStasWorkflow',
+    'BeerMcStasWorkflowKnownPeaks',
     '__version__',
     'default_parameters',
     'load_beer_mcstas',

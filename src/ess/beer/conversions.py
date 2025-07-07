@@ -1,11 +1,28 @@
 import numpy as np
 import scipp as sc
+import scipp.constants
+import scippneutron as scn
 
-from .types import DetectorTofData, RunType, StreakClusteredData
+from .types import (
+    DetectorData,
+    DetectorTofData,
+    DHKLList,
+    ElasticCoordTransformGraph,
+    MaxTimeOffset,
+    MinTimeToNextStreak,
+    ModDt,
+    ModShift,
+    ModTwidth,
+    RunType,
+    StreakClusteredData,
+    Time0,
+)
 
 
 def compute_tof_in_each_cluster(
     da: StreakClusteredData[RunType],
+    max_distance_from_streak_line: MaxTimeOffset,
+    min_distance_to_neighbor_line: MinTimeToNextStreak,
 ) -> DetectorTofData[RunType]:
     '''Fits a line through each cluster, the intercept of the line is t0.
     The line is fitted using linear regression with an outlier removal procedure.
@@ -20,9 +37,9 @@ def compute_tof_in_each_cluster(
        are part of the background.
     3. Go back to 1) and iterate until convergence. A few iterations should be enough.
     '''
-    sin_theta_L = sc.sin(da.bins.coords['two_theta'] / 2) * da.bins.coords['L']
-    t = da.bins.coords['t']
-    for _ in range(5):
+    sin_theta_L = sc.sin(da.bins.coords['two_theta'] / 2) * da.bins.coords['Ltotal']
+    t = da.bins.coords['event_time_offset']
+    for _ in range(15):
         s, t0 = _linear_regression_by_bin(sin_theta_L, t, da)
 
         s_left = sc.array(dims=s.dims, values=np.roll(s.values, 1), unit=s.unit)
@@ -44,13 +61,12 @@ def compute_tof_in_each_cluster(
             + sc.values(s_right) * sin_theta_L
             - (sc.values(t0) + sc.values(s) * sin_theta_L)
         )
-
         da = da.bins.assign_masks(
             # TODO: Find suitable masking parameters for other chopper settings
-            too_far_from_center=(distance_to_self > sc.scalar(3e-4, unit='s')).data,
+            too_far_from_center=(distance_to_self > max_distance_from_streak_line).data,
             too_close_to_other=(
-                (distance_self_to_left < sc.scalar(8e-4, unit='s'))
-                | (distance_self_to_right < sc.scalar(8e-4, unit='s'))
+                (distance_self_to_left < min_distance_to_neighbor_line)
+                | (distance_self_to_right < min_distance_to_neighbor_line)
             ).data,
         )
 
@@ -77,4 +93,89 @@ def _linear_regression_by_bin(
     return b1, b0
 
 
+def _compute_d(event_time_offset, theta, dhkl_list, mod_twidth, mod_shift, L0):
+    sinth = sc.sin(theta)
+    t = event_time_offset
+
+    d = sc.empty(dims=sinth.dims, shape=sinth.shape, unit=dhkl_list[0].unit)
+    d[:] = sc.scalar(float('nan'), unit=dhkl_list[0].unit)
+
+    dtfound = sc.empty(dims=sinth.dims, shape=sinth.shape, dtype='float64', unit=t.unit)
+    dtfound[:] = sc.scalar(float('nan'), unit=t.unit)
+
+    const = (
+        2 * (1.0 + mod_shift) * sinth * L0 / (scipp.constants.h / scipp.constants.m_n)
+    ).to(unit=f'{event_time_offset.unit}/angstrom')
+
+    for dhkl in dhkl_list:
+        dt = sc.abs(t - dhkl * const)
+        dt_in_range = dt < mod_twidth / 2
+        no_dt_found = sc.isnan(dtfound)
+        dtfound = sc.where(dt_in_range, sc.where(no_dt_found, dt, dtfound), dtfound)
+        d = sc.where(
+            dt_in_range,
+            sc.where(no_dt_found, dhkl, sc.scalar(float('nan'), unit=dhkl.unit)),
+            d,
+        )
+
+    return d
+
+
+def _tof_from_dhkl(
+    event_time_offset, theta, coarse_dhkl, Ltotal, mod_shift, mod_dt, time0
+):
+    # tref = 2 * (1.0 + mod_shift) * d_hkl * sinth / hm * L0
+    # tc = t - time0 - tref
+    # dt = np.floor(tc / mod_dt + 0.5) * mod_dt + time0
+    c = (-2 * (1.0 + mod_shift) / (scipp.constants.h / scipp.constants.m_n)).to(
+        unit=f'{event_time_offset.unit}/m/angstrom'
+    )
+    out = sc.sin(theta)
+    out *= c
+    out *= coarse_dhkl
+    out *= Ltotal
+    out += event_time_offset
+    out -= time0
+    out /= mod_dt
+    out += 0.5
+    sc.floor(out, out=out)
+    out *= mod_dt
+    out += time0
+    out *= -1
+    out += event_time_offset
+    return out
+
+
+def tof_from_known_dhkl_graph(
+    mod_shift: ModShift,
+    mod_dt: ModDt,
+    mod_twidth: ModTwidth,
+    time0: Time0,
+    dhkl_list: DHKLList,
+) -> ElasticCoordTransformGraph:
+    return {
+        **scn.conversion.graph.tof.elastic("tof"),
+        'mod_twidth': lambda: mod_twidth,
+        'mod_dt': lambda: mod_dt,
+        'time0': lambda: time0,
+        'mod_shift': lambda: mod_shift,
+        'tof': _tof_from_dhkl,
+        'coarse_dhkl': _compute_d,
+        'theta': lambda two_theta: two_theta / 2,
+        'dhkl_list': lambda: dhkl_list,
+    }
+
+
+def compute_tof_from_known_peaks(
+    da: DetectorData[RunType], graph: ElasticCoordTransformGraph
+) -> DetectorTofData[RunType]:
+    return da.transform_coords(
+        ('dspacing', 'tof', 'coarse_dhkl'), graph=graph, keep_intermediate=False
+    )
+
+
+convert_from_known_peaks_providers = (
+    tof_from_known_dhkl_graph,
+    compute_tof_from_known_peaks,
+)
 providers = (compute_tof_in_each_cluster,)
