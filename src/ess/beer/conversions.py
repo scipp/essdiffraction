@@ -37,6 +37,16 @@ def compute_tof_in_each_cluster(
        are part of the background.
     3. Go back to 1) and iterate until convergence. A few iterations should be enough.
     '''
+    if isinstance(da, sc.DataGroup):
+        return sc.DataGroup(
+            {
+                k: compute_tof_in_each_cluster(
+                    v, max_distance_from_streak_line, min_distance_to_neighbor_line
+                )
+                for k, v in da.items()
+            }
+        )
+
     sin_theta_L = sc.sin(da.bins.coords['two_theta'] / 2) * da.bins.coords['Ltotal']
     t = da.bins.coords['event_time_offset']
     for _ in range(15):

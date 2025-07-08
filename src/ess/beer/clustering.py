@@ -6,6 +6,8 @@ from .types import DetectorData, RunType, StreakClusteredData
 
 
 def cluster_events_by_streak(da: DetectorData[RunType]) -> StreakClusteredData[RunType]:
+    if isinstance(da, sc.DataGroup):
+        return sc.DataGroup({k: cluster_events_by_streak(v) for k, v in da.items()})
     da = da.copy(deep=False)
     da.coords['coarse_d'] = (
         constants.h

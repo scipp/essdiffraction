@@ -32,15 +32,11 @@ def _unique_child_group_h5(
     return out
 
 
-def load_beer_mcstas(f):
-    if isinstance(f, str):
-        with h5py.File(f) as ff:
-            return load_beer_mcstas(ff)
-
+def _load_beer_mcstas(f, bank=1):
     data, events, params, sample_pos, chopper_pos = _load_h5(
         f,
-        'NXentry/NXdetector/bank01_events_dat_list_p_x_y_n_id_t',
-        'NXentry/NXdetector/bank01_events_dat_list_p_x_y_n_id_t/events',
+        f'NXentry/NXdetector/bank{bank:02}_events_dat_list_p_x_y_n_id_t',
+        f'NXentry/NXdetector/bank{bank:02}_events_dat_list_p_x_y_n_id_t/events',
         'NXentry/simulation/Param',
         '/entry1/instrument/components/0189_sampleMantid/Position',
         '/entry1/instrument/components/0017_cMCA/Position',
@@ -76,7 +72,9 @@ def load_beer_mcstas(f):
     # Source is assumed to be at the origin
     da.coords['L0'] = L1 + L2 + sc.norm(da.coords['chopper_position'])
     da.coords['Ltotal'] = L1 + L2
-    da.coords['two_theta'] = sc.acos(-da.coords['x'] / L2)
+    da.coords['two_theta'] = sc.acos(
+        (-da.coords['x'] if bank == 1 else da.coords['x']) / L2
+    )
 
     # Save some space
     da.coords.pop('x')
@@ -94,3 +92,16 @@ def load_beer_mcstas(f):
 
     da.coords['event_time_offset'] = da.coords.pop('t')
     return da
+
+
+def load_beer_mcstas(f):
+    if isinstance(f, str):
+        with h5py.File(f) as ff:
+            return load_beer_mcstas(ff)
+
+    return sc.DataGroup(
+        {
+            'bank1': _load_beer_mcstas(f, bank=1),
+            'bank2': _load_beer_mcstas(f, bank=2),
+        }
+    )
