@@ -22,7 +22,7 @@ MinTimeToNextStreak = NewType('MinTimeToNextStreak', sc.Variable)
 
 PeakList = NewType('PeakList', sc.Variable)
 
-ElasticCoordTransformGraph = NewType("ElasticCoordTransformGraph", dict)
+TofCoordTransformGraph = NewType("TofCoordTransformGraph", dict)
 
 ModShift = NewType('ModShift', sc.Variable)
 ModTwidth = NewType('ModTwidth', sc.Variable)

@@ -1,13 +1,11 @@
 import numpy as np
 import scipp as sc
 import scipp.constants
-import scippneutron as scn
 
 from .types import (
     DetectorData,
     DetectorTofData,
     DHKLList,
-    ElasticCoordTransformGraph,
     MaxTimeOffset,
     MinTimeToNextStreak,
     ModDt,
@@ -16,6 +14,7 @@ from .types import (
     RunType,
     StreakClusteredData,
     Time0,
+    TofCoordTransformGraph,
 )
 
 
@@ -162,9 +161,8 @@ def tof_from_known_dhkl_graph(
     mod_twidth: ModTwidth,
     time0: Time0,
     dhkl_list: DHKLList,
-) -> ElasticCoordTransformGraph:
+) -> TofCoordTransformGraph:
     return {
-        **scn.conversion.graph.tof.elastic("tof"),
         'mod_twidth': lambda: mod_twidth,
         'mod_dt': lambda: mod_dt,
         'time0': lambda: time0,
@@ -177,11 +175,9 @@ def tof_from_known_dhkl_graph(
 
 
 def compute_tof_from_known_peaks(
-    da: DetectorData[RunType], graph: ElasticCoordTransformGraph
+    da: DetectorData[RunType], graph: TofCoordTransformGraph
 ) -> DetectorTofData[RunType]:
-    return da.transform_coords(
-        ('dspacing', 'tof', 'coarse_dhkl'), graph=graph, keep_intermediate=False
-    )
+    return da.transform_coords(('tof',), graph=graph, keep_intermediate=False)
 
 
 convert_from_known_peaks_providers = (
