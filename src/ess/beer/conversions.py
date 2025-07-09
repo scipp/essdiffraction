@@ -80,13 +80,22 @@ def _linear_regression_by_bin(
     return b1, b0
 
 
-def _compute_d(event_time_offset, theta, dhkl_list, mod_twidth, mod_shift, L0):
+def _compute_d(
+    event_time_offset: sc.Variable,
+    theta: sc.Variable,
+    dhkl_list: sc.Variable,
+    mod_twidth: sc.Variable,
+    mod_shift: sc.Variable,
+    L0: sc.Variable,
+) -> sc.Variable:
+    """Determines the ``d_hkl`` peak each event belongs to,
+    given a list of known peaks."""
+    # Source: https://www2.mcstas.org/download/components/3.4/contrib/NPI_tof_dhkl_detector.comp
     sinth = sc.sin(theta)
     t = event_time_offset
 
     d = sc.empty(dims=sinth.dims, shape=sinth.shape, unit=dhkl_list[0].unit)
     d[:] = sc.scalar(float('nan'), unit=dhkl_list[0].unit)
-
     dtfound = sc.empty(dims=sinth.dims, shape=sinth.shape, dtype='float64', unit=t.unit)
     dtfound[:] = sc.scalar(float('nan'), unit=t.unit)
 
@@ -109,11 +118,20 @@ def _compute_d(event_time_offset, theta, dhkl_list, mod_twidth, mod_shift, L0):
 
 
 def _tof_from_dhkl(
-    event_time_offset, theta, coarse_dhkl, Ltotal, mod_shift, mod_dt, time0
-):
-    # tref = 2 * (1.0 + mod_shift) * d_hkl * sinth / hm * L0
-    # tc = t - time0 - tref
-    # dt = np.floor(tc / mod_dt + 0.5) * mod_dt + time0
+    event_time_offset: sc.Variable,
+    theta: sc.Variable,
+    coarse_dhkl: sc.Variable,
+    Ltotal: sc.Variable,
+    mod_shift: sc.Variable,
+    mod_dt: sc.Variable,
+    time0: sc.Variable,
+) -> sc.Variable:
+    '''Computes tof for BEER given the dhkl peak that the event belongs to'''
+    # Source: https://www2.mcstas.org/download/components/3.4/contrib/NPI_tof_dhkl_detector.comp
+    # tref = 2 * (1.0 + mod_shift) * d_hkl * sin(theta) / hm * Ltotal
+    # tc = event_time_zero - time0 - tref
+    # dt = floor(tc / mod_dt + 0.5) * mod_dt + time0
+    # tof = event_time_offset - dt
     c = (-2 * (1.0 + mod_shift) / (scipp.constants.h / scipp.constants.m_n)).to(
         unit=f'{event_time_offset.unit}/m/angstrom'
     )
