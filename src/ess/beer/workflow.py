@@ -17,11 +17,25 @@ from .types import (
     RunType,
     SampleRun,
     Time0,
+    TwoThetaMaskFunction,
 )
 
 
-def load_mcstas(fname: Filename[SampleRun]) -> DetectorData[SampleRun]:
-    return DetectorData[SampleRun](load_beer_mcstas(fname))
+def load_mcstas(
+    fname: Filename[SampleRun], two_theta_mask: TwoThetaMaskFunction
+) -> DetectorData[SampleRun]:
+    da = DetectorData[SampleRun](load_beer_mcstas(fname))
+    da = (
+        sc.DataGroup(
+            {
+                k: v.assign_masks(two_theta=two_theta_mask(v.coords['two_theta']))
+                for k, v in da.items()
+            }
+        )
+        if isinstance(da, sc.DataGroup)
+        else da.assign_masks(two_theta=two_theta_mask(da.coords['two_theta']))
+    )
+    return da
 
 
 default_parameters = {
@@ -30,6 +44,10 @@ default_parameters = {
     ModDt: sc.scalar(4.464e-4, unit='s'),
     Time0: sc.scalar(1.16 * 17 / 360 / 28, unit='s'),
     MaxTimeOffset: sc.scalar(3e-4, unit='s'),
+    TwoThetaMaskFunction: lambda two_theta: (
+        (two_theta >= sc.scalar(105, unit='deg').to(unit='rad', dtype='float64'))
+        | (two_theta <= sc.scalar(75, unit='deg').to(unit='rad', dtype='float64'))
+    ),
 }
 
 

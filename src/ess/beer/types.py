@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from typing import NewType
 
 import sciline
@@ -18,6 +19,9 @@ DetectorTofData = DetectorTofData
 
 
 MaxTimeOffset = NewType('MaxTimeOffset', sc.Variable)
+TwoThetaMaskFunction = NewType(
+    'TwoThetaMaskFunction', Callable[[sc.Variable], sc.Variable]
+)
 
 PeakList = NewType('PeakList', sc.Variable)
 

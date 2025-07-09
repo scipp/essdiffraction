@@ -85,11 +85,6 @@ def _load_beer_mcstas(f, bank=1):
     # TODO: approximate t0 should depend on chopper information
     da.coords['approximate_t0'] = sc.scalar(6e-3, unit='s')
 
-    # TODO: limits should be user configurable
-    da.masks['two_theta'] = (
-        da.coords['two_theta'] >= sc.scalar(105, unit='deg').to(unit='rad')
-    ) | (da.coords['two_theta'] <= sc.scalar(75, unit='deg').to(unit='rad'))
-
     da.coords['event_time_offset'] = da.coords.pop('t')
     return da
 
