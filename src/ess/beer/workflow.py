@@ -24,7 +24,7 @@ from .types import (
 def load_mcstas(
     fname: Filename[SampleRun], two_theta_mask: TwoThetaMaskFunction
 ) -> DetectorData[SampleRun]:
-    da = DetectorData[SampleRun](load_beer_mcstas(fname))
+    da = load_beer_mcstas(fname)
     da = (
         sc.DataGroup(
             {
@@ -35,7 +35,7 @@ def load_mcstas(
         if isinstance(da, sc.DataGroup)
         else da.assign_masks(two_theta=two_theta_mask(da.coords['two_theta']))
     )
-    return da
+    return DetectorData[SampleRun](da)
 
 
 default_parameters = {
