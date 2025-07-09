@@ -11,7 +11,6 @@ from .types import (
     DetectorData,
     Filename,
     MaxTimeOffset,
-    MinTimeToNextStreak,
     ModDt,
     ModShift,
     ModTwidth,
@@ -31,7 +30,6 @@ default_parameters = {
     ModDt: sc.scalar(4.464e-4, unit='s'),
     Time0: sc.scalar(1.16 * 17 / 360 / 28, unit='s'),
     MaxTimeOffset: sc.scalar(3e-4, unit='s'),
-    MinTimeToNextStreak: sc.scalar(8e-4, unit='s'),
 }
 
 

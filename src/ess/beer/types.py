@@ -18,7 +18,6 @@ DetectorTofData = DetectorTofData
 
 
 MaxTimeOffset = NewType('MaxTimeOffset', sc.Variable)
-MinTimeToNextStreak = NewType('MinTimeToNextStreak', sc.Variable)
 
 PeakList = NewType('PeakList', sc.Variable)
 

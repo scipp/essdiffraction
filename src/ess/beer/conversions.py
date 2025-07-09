@@ -1,4 +1,3 @@
-import numpy as np
 import scipp as sc
 import scipp.constants
 
@@ -7,7 +6,6 @@ from .types import (
     DetectorTofData,
     DHKLList,
     MaxTimeOffset,
-    MinTimeToNextStreak,
     ModDt,
     ModShift,
     ModTwidth,
@@ -21,7 +19,6 @@ from .types import (
 def compute_tof_in_each_cluster(
     da: StreakClusteredData[RunType],
     max_distance_from_streak_line: MaxTimeOffset,
-    min_distance_to_neighbor_line: MinTimeToNextStreak,
 ) -> DetectorTofData[RunType]:
     '''Fits a line through each cluster, the intercept of the line is t0.
     The line is fitted using linear regression with an outlier removal procedure.
@@ -39,9 +36,7 @@ def compute_tof_in_each_cluster(
     if isinstance(da, sc.DataGroup):
         return sc.DataGroup(
             {
-                k: compute_tof_in_each_cluster(
-                    v, max_distance_from_streak_line, min_distance_to_neighbor_line
-                )
+                k: compute_tof_in_each_cluster(v, max_distance_from_streak_line)
                 for k, v in da.items()
             }
         )
@@ -49,44 +44,27 @@ def compute_tof_in_each_cluster(
     sin_theta_L = sc.sin(da.bins.coords['two_theta'] / 2) * da.bins.coords['Ltotal']
     t = da.bins.coords['event_time_offset']
     for _ in range(15):
-        s, t0 = _linear_regression_by_bin(sin_theta_L, t, da)
-
-        s_left = sc.array(dims=s.dims, values=np.roll(s.values, 1), unit=s.unit)
-        s_right = sc.array(dims=s.dims, values=np.roll(s.values, -1), unit=s.unit)
-        t0_left = sc.array(dims=t0.dims, values=np.roll(t0.values, 1), unit=t0.unit)
-        t0_right = sc.array(dims=t0.dims, values=np.roll(t0.values, -1), unit=t0.unit)
+        s, t0 = _linear_regression_by_bin(sin_theta_L, t, da.data)
 
         # Distance from point to line through cluster
         distance_to_self = sc.abs(sc.values(t0) + sc.values(s) * sin_theta_L - t)
-        # Distance from this cluster line to next before cluster line
-        distance_self_to_left = sc.abs(
-            sc.values(t0_left)
-            + sc.values(s_left) * sin_theta_L
-            - (sc.values(t0) + sc.values(s) * sin_theta_L)
-        )
-        # Distance from this cluster line to next after cluster line
-        distance_self_to_right = sc.abs(
-            sc.values(t0_right)
-            + sc.values(s_right) * sin_theta_L
-            - (sc.values(t0) + sc.values(s) * sin_theta_L)
-        )
+
         da = da.bins.assign_masks(
-            # TODO: Find suitable masking parameters for other chopper settings
-            too_far_from_center=(distance_to_self > max_distance_from_streak_line).data,
-            too_close_to_other=(
-                (distance_self_to_left < min_distance_to_neighbor_line)
-                | (distance_self_to_right < min_distance_to_neighbor_line)
-            ).data,
+            too_far_from_center=(distance_to_self > max_distance_from_streak_line),
         )
 
-    da = da.assign_coords(t0=sc.values(t0).data)
-    da = da.bins.assign_coords(tof=(t - sc.values(t0)).data)
+    da = da.assign_coords(t0=sc.values(t0))
+    da = da.bins.assign_coords(tof=(t - sc.values(t0)))
     return da
 
 
 def _linear_regression_by_bin(
-    x: sc.Variable, y: sc.Variable, w: sc.DataArray
-) -> tuple[sc.DataArray, sc.DataArray]:
+    x: sc.Variable, y: sc.Variable, w: sc.Variable
+) -> tuple[sc.Variable, sc.Variable]:
+    '''Performs a weighted linear regression of the points
+    in the binned variables ``x`` and ``y`` weighted by ``w``.
+    Returns ``b1`` and ``b0`` such that ``y = b1 * x + b0``.
+    '''
     w = sc.values(w)
     tot_w = w.bins.sum()
 
