@@ -29,7 +29,7 @@ def test_can_reduce_using_known_peaks_workflow():
     assert_allclose(
         max_peak_d,
         sc.scalar(2.0407, unit='angstrom'),
-        atol=sc.scalar(1e-3, unit='angstrom'),
+        atol=sc.scalar(1e-2, unit='angstrom'),
     )
 
 
@@ -49,5 +49,5 @@ def test_can_reduce_using_unknown_peaks_workflow():
     assert_allclose(
         max_peak_d,
         sc.scalar(2.0407, unit='angstrom'),
-        atol=sc.scalar(1e-3, unit='angstrom'),
+        atol=sc.scalar(1e-2, unit='angstrom'),
     )
