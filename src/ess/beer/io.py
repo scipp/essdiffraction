@@ -45,21 +45,24 @@ def _load_beer_mcstas(f, bank=1):
         sc.array(dims=['events'], values=events[:, 0], variances=events[:, 0] ** 2),
     )
     for name, value in data.attrs.items():
-        da.coords[name] = sc.scalar(value.decode())
+        if name in ('position',):
+            da.coords[name] = sc.scalar(value.decode())
 
     for i, label in enumerate(data.attrs["ylabel"].decode().strip().split(' ')):
         if label == 'p':
             continue
         da.coords[label] = sc.array(dims=['events'], values=events[:, i])
+
     for k, v in params.items():
         v = v[0]
         if isinstance(v, bytes):
             v = v.decode()
-        da.coords[k] = sc.scalar(v)
+        if k in ('mode', 'sample_filename'):
+            da.coords[k] = sc.scalar(v)
 
     da.coords['sample_position'] = sc.vector(sample_pos[:], unit='m')
     da.coords['detector_position'] = sc.vector(
-        list(map(float, da.coords['position'].value.split(' '))), unit='m'
+        list(map(float, da.coords.pop('position').value.split(' '))), unit='m'
     )
     da.coords['chopper_position'] = sc.vector(chopper_pos[:], unit='m')
     da.coords['x'].unit = 'm'
@@ -80,7 +83,6 @@ def _load_beer_mcstas(f, bank=1):
     da.coords.pop('x')
     da.coords.pop('y')
     da.coords.pop('n')
-    da.coords.pop('id')
 
     # TODO: approximate t0 should depend on chopper information
     da.coords['approximate_t0'] = sc.scalar(6e-3, unit='s')
