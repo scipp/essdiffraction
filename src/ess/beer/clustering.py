@@ -9,10 +9,14 @@ def cluster_events_by_streak(da: DetectorData[RunType]) -> StreakClusteredData[R
     if isinstance(da, sc.DataGroup):
         return sc.DataGroup({k: cluster_events_by_streak(v) for k, v in da.items()})
     da = da.copy(deep=False)
+
+    # TODO: approximate t0 should depend on chopper information
+    approximate_t0 = sc.scalar(6e-3, unit='s')
+
     da.coords['coarse_d'] = (
         constants.h
         / constants.m_n
-        * (da.coords['event_time_offset'] - da.coords['approximate_t0'])
+        * (da.coords['event_time_offset'] - approximate_t0)
         / sc.sin(da.coords['two_theta'] / 2)
         / da.coords['L0']
         / 2

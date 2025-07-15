@@ -84,9 +84,6 @@ def _load_beer_mcstas(f, bank=1):
     da.coords.pop('y')
     da.coords.pop('n')
 
-    # TODO: approximate t0 should depend on chopper information
-    da.coords['approximate_t0'] = sc.scalar(6e-3, unit='s')
-
     da.coords['event_time_offset'] = da.coords.pop('t')
     return da
 
