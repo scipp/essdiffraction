@@ -23,7 +23,7 @@ def _make_pooch():
             "duplex-mode09.h5": "md5:ebb3f9694ffdd0949f342bd0deaaf627",
             "duplex-mode10.h5": "md5:559e7fc0cce265f5102520e382ee5b26",
             "duplex-mode16.h5": "md5:2ccd05832bbc8a087a731b37364b995d",
-            "silicon.h5": "md5:3425ae2b2fe7a938c6f0a4afeb9e0819",
+            "silicon-mode09.h5": "md5:aa068d46dc7efc303b68a13e527e2607",
             "silicon-dhkl.tab": "md5:90bedceb23245b045ce1ed0170c1313b",
             "duplex-dhkl.tab": "md5:b4c6c2fcd66466ad291f306b2d6b346e",
         },
@@ -45,7 +45,7 @@ def mcstas_silicon_medium_resolution() -> str:
     Simulated intensity from silicon sample with
     medium resolution chopper configuration.
     """
-    return _pooch.fetch('silicon.h5')
+    return _pooch.fetch('silicon-mode09.h5')
 
 
 def duplex_peaks() -> str:
