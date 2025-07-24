@@ -41,6 +41,7 @@ def _load_beer_mcstas(f, bank=1):
         '/entry1/instrument/components/0189_sampleMantid/Position',
         '/entry1/instrument/components/0017_cMCA/Position',
     )
+    events = events[()]
     da = sc.DataArray(
         sc.array(dims=['events'], values=events[:, 0], variances=events[:, 0] ** 2),
     )
