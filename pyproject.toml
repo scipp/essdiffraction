@@ -110,6 +110,9 @@ pydocstyle.convention = "numpy"
     "S101",  # asserts are used for demonstration and are safe in notebooks
     "T201",  # printing is ok for demonstration purposes
 ]
+"docs/user-guide/beer/tof_diagrams.ipynb" = [
+    "PGH004",  # file contains too many issues - allow blanket ignore
+]
 
 [tool.ruff.format]
 quote-style = "preserve"
