@@ -5,20 +5,18 @@ from .types import (
     DetectorData,
     DetectorTofData,
     DHKLList,
-    MaxTimeOffset,
-    ModDt,
-    ModShift,
-    ModTwidth,
+    ModulationPeriod,
+    PulseLength,
     RunType,
     StreakClusteredData,
-    Time0,
     TofCoordTransformGraph,
+    WavelengthDefinitionChopperDelay,
 )
 
 
 def compute_tof_in_each_cluster(
     da: StreakClusteredData[RunType],
-    max_distance_from_streak_line: MaxTimeOffset,
+    mod_period: ModulationPeriod,
 ) -> DetectorTofData[RunType]:
     '''Fits a line through each cluster, the intercept of the line is t0.
     The line is fitted using linear regression with an outlier removal procedure.
@@ -35,12 +33,10 @@ def compute_tof_in_each_cluster(
     '''
     if isinstance(da, sc.DataGroup):
         return sc.DataGroup(
-            {
-                k: compute_tof_in_each_cluster(v, max_distance_from_streak_line)
-                for k, v in da.items()
-            }
+            {k: compute_tof_in_each_cluster(v, mod_period) for k, v in da.items()}
         )
 
+    max_distance_from_streak_line = mod_period / 3
     sin_theta_L = sc.sin(da.bins.coords['two_theta'] / 2) * da.bins.coords['Ltotal']
     t = da.bins.coords['event_time_offset']
     for _ in range(15):
@@ -84,8 +80,7 @@ def _compute_d(
     event_time_offset: sc.Variable,
     theta: sc.Variable,
     dhkl_list: sc.Variable,
-    mod_twidth: sc.Variable,
-    mod_shift: sc.Variable,
+    pulse_length: sc.Variable,
     L0: sc.Variable,
 ) -> sc.Variable:
     """Determines the ``d_hkl`` peak each event belongs to,
@@ -99,13 +94,13 @@ def _compute_d(
     dtfound = sc.empty(dims=sinth.dims, shape=sinth.shape, dtype='float64', unit=t.unit)
     dtfound[:] = sc.scalar(float('nan'), unit=t.unit)
 
-    const = (
-        2 * (1.0 + mod_shift) * sinth * L0 / (scipp.constants.h / scipp.constants.m_n)
-    ).to(unit=f'{event_time_offset.unit}/angstrom')
+    const = (2 * sinth * L0 / (scipp.constants.h / scipp.constants.m_n)).to(
+        unit=f'{event_time_offset.unit}/angstrom'
+    )
 
     for dhkl in dhkl_list:
         dt = sc.abs(t - dhkl * const)
-        dt_in_range = dt < mod_twidth / 2
+        dt_in_range = dt < pulse_length / 2
         no_dt_found = sc.isnan(dtfound)
         dtfound = sc.where(dt_in_range, sc.where(no_dt_found, dt, dtfound), dtfound)
         d = sc.where(
@@ -122,17 +117,16 @@ def _tof_from_dhkl(
     theta: sc.Variable,
     coarse_dhkl: sc.Variable,
     Ltotal: sc.Variable,
-    mod_shift: sc.Variable,
-    mod_dt: sc.Variable,
+    mod_period: sc.Variable,
     time0: sc.Variable,
 ) -> sc.Variable:
     '''Computes tof for BEER given the dhkl peak that the event belongs to'''
     # Source: https://www2.mcstas.org/download/components/3.4/contrib/NPI_tof_dhkl_detector.comp
-    # tref = 2 * (1.0 + mod_shift) * d_hkl * sin(theta) / hm * Ltotal
+    # tref = 2 * d_hkl * sin(theta) / hm * Ltotal
     # tc = event_time_zero - time0 - tref
-    # dt = floor(tc / mod_dt + 0.5) * mod_dt + time0
+    # dt = floor(tc / mod_period + 0.5) * mod_period + time0
     # tof = event_time_offset - dt
-    c = (-2 * (1.0 + mod_shift) / (scipp.constants.h / scipp.constants.m_n)).to(
+    c = (-2 * 1.0 / (scipp.constants.h / scipp.constants.m_n)).to(
         unit=f'{event_time_offset.unit}/m/angstrom'
     )
     out = sc.sin(theta)
@@ -141,10 +135,10 @@ def _tof_from_dhkl(
     out *= Ltotal
     out += event_time_offset
     out -= time0
-    out /= mod_dt
+    out /= mod_period
     out += 0.5
     sc.floor(out, out=out)
-    out *= mod_dt
+    out *= mod_period
     out += time0
     out *= -1
     out += event_time_offset
@@ -152,17 +146,15 @@ def _tof_from_dhkl(
 
 
 def tof_from_known_dhkl_graph(
-    mod_shift: ModShift,
-    mod_dt: ModDt,
-    mod_twidth: ModTwidth,
-    time0: Time0,
+    mod_period: ModulationPeriod,
+    pulse_length: PulseLength,
+    time0: WavelengthDefinitionChopperDelay,
     dhkl_list: DHKLList,
 ) -> TofCoordTransformGraph:
     return {
-        'mod_twidth': lambda: mod_twidth,
-        'mod_dt': lambda: mod_dt,
+        'pulse_length': lambda: pulse_length,
+        'mod_period': lambda: mod_period,
         'time0': lambda: time0,
-        'mod_shift': lambda: mod_shift,
         'tof': _tof_from_dhkl,
         'coarse_dhkl': _compute_d,
         'theta': lambda two_theta: two_theta / 2,

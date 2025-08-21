@@ -18,17 +18,24 @@ SampleRun = SampleRun
 DetectorTofData = DetectorTofData
 
 
-MaxTimeOffset = NewType('MaxTimeOffset', sc.Variable)
 TwoThetaMaskFunction = NewType(
     'TwoThetaMaskFunction', Callable[[sc.Variable], sc.Variable]
 )
 
-PeakList = NewType('PeakList', sc.Variable)
-
 TofCoordTransformGraph = NewType("TofCoordTransformGraph", dict)
 
-ModShift = NewType('ModShift', sc.Variable)
-ModTwidth = NewType('ModTwidth', sc.Variable)
-ModDt = NewType('ModDt', sc.Variable)
-Time0 = NewType('Time0', sc.Variable)
+PulseLength = NewType('PulseLength', sc.Variable)
+'''Length of the neutron source pulse in time.'''
+
+ModulationPeriod = NewType('ModulationPeriod', sc.Variable)
+'''The effective period of the modulating chopper:
+``1 / (K * F)`` where ``K`` is the number of chopper openings and
+``F`` is the chopper frequency.'''
+
+WavelengthDefinitionChopperDelay = NewType(
+    'WavelengthDefinitionChopperDelay', sc.Variable
+)
+'''Wavelength definition chopper time delay relative to source pulse.'''
+
 DHKLList = NewType('DHKLList', sc.Variable)
+'''List of peak position estimates.'''
