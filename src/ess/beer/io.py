@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2025 Scipp contributors (https://github.com/scipp)
+from pathlib import Path
+
 import h5py
 import scipp as sc
 
@@ -98,8 +100,11 @@ def _load_beer_mcstas(f, bank=1):
     return da
 
 
-def load_beer_mcstas(f):
-    if isinstance(f, str):
+def load_beer_mcstas(f: str | Path | h5py.File) -> sc.DataGroup:
+    '''Load beer McStas data from a file to a
+    data group with one data array for each bank.
+    '''
+    if isinstance(f, str | Path):
         with h5py.File(f) as ff:
             return load_beer_mcstas(ff)
 

@@ -24,6 +24,8 @@ default_parameters = {
 
 
 def BeerMcStasWorkflow():
+    '''Workflow to process BEER McStas files without a list
+    of estimated peak positions.'''
     return sl.Pipeline(
         (*mcstas_providers, *clustering_providers, *conversion_providers),
         params=default_parameters,
@@ -32,6 +34,8 @@ def BeerMcStasWorkflow():
 
 
 def BeerMcStasWorkflowKnownPeaks():
+    '''Workflow to process BEER McStas files using a list
+    of estimated peak positions.'''
     return sl.Pipeline(
         (*mcstas_providers, *convert_from_known_peaks_providers),
         params=default_parameters,

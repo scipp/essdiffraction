@@ -110,3 +110,44 @@
 
    powgen
 ```
+
+## ESSbeer
+
+### Workflows
+
+
+```{eval-rst}
+.. currentmodule:: ess.beer
+
+.. autosummary::
+   :toctree: ../generated/functions
+
+   BeerMcStasWorkflowKnownPeaks
+   BeerMcStasWorkflow
+```
+
+### Top-level functions
+
+```{eval-rst}
+.. currentmodule:: ess.dream
+
+.. autosummary::
+   :toctree: ../generated/functions
+
+    load_beer_mcstas
+```
+
+### Submodules
+
+```{eval-rst}
+.. autosummary::
+   :toctree: ../generated/modules
+   :template: module-template.rst
+   :recursive:
+
+   clustering
+   conversions
+   data
+   io
+   workflow
+```
