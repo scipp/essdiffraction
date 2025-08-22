@@ -27,11 +27,7 @@ def cluster_events_by_streak(da: DetectorData[RunType]) -> StreakClusteredData[R
         h.data.values.max() - h.data.values, distance=3, height=h.data.values.max() / 2
     )
 
-    valleys = sc.array(
-        dims=['coarse_d'],
-        values=h.coords['coarse_d'].values[i_valleys],
-        unit=h.coords['coarse_d'].unit,
-    )
+    valleys = h.coords['coarse_d'][i_valleys]
     peaks = sc.array(
         dims=['coarse_d'],
         values=h.coords['coarse_d'].values[i_peaks],
@@ -39,17 +35,16 @@ def cluster_events_by_streak(da: DetectorData[RunType]) -> StreakClusteredData[R
     )
 
     has_peak = peaks.bin(coarse_d=valleys).bins.size().data.to(dtype='bool')
-    has_peak_left = sc.concat(
-        (has_peak, sc.array(dims=['coarse_d'], values=[False], unit=None)), 'coarse_d'
-    )
-    has_peak_right = sc.concat(
-        (
-            sc.array(dims=['coarse_d'], values=[False], unit=None),
-            has_peak,
-        ),
-        'coarse_d',
-    )
-    filtered_valleys = valleys[has_peak_left | has_peak_right]
+    filtered_valleys = valleys[
+        sc.concat(
+            [
+                has_peak[0],
+                has_peak[:-1] | has_peak[1:],
+                has_peak[-1],
+            ],
+            dim=has_peak.dim,
+        )
+    ]
     has_peak = peaks.bin(coarse_d=filtered_valleys).bins.size().data
     b = da.bin(coarse_d=filtered_valleys).assign_masks(
         no_peak=has_peak != sc.scalar(1, unit=None)

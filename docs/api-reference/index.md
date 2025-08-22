@@ -129,7 +129,7 @@
 ### Top-level functions
 
 ```{eval-rst}
-.. currentmodule:: ess.dream
+.. currentmodule:: ess.beer
 
 .. autosummary::
    :toctree: ../generated/functions
