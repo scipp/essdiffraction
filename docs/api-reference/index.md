@@ -42,7 +42,7 @@
    types
 ```
 
-## ESSdream
+## DREAM
 
 ### Workflows
 
@@ -98,20 +98,7 @@
    io
 ```
 
-## SNS powder
-
-```{eval-rst}
-.. currentmodule:: ess.snspowder
-
-.. autosummary::
-   :toctree: ../generated/modules
-   :template: module-template.rst
-   :recursive:
-
-   powgen
-```
-
-## ESSbeer
+## BEER
 
 ### Workflows
 
@@ -150,4 +137,17 @@
    data
    io
    workflow
+```
+
+## SNS powder
+
+```{eval-rst}
+.. currentmodule:: ess.snspowder
+
+.. autosummary::
+   :toctree: ../generated/modules
+   :template: module-template.rst
+   :recursive:
+
+   powgen
 ```
