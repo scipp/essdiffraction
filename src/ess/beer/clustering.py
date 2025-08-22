@@ -38,13 +38,16 @@ def cluster_events_by_streak(da: DetectorData[RunType]) -> StreakClusteredData[R
     )
 
     has_peak = peaks.bin(coarse_d=valleys).bins.size().data.to(dtype='bool')
-    filtered_valleys = valleys[sc.concat([
-            has_peak[0],
-            has_peak[:-1] | has_peak[1:],
-            has_peak[-1],
-        ],
-        dim=has_peak.dim
-    )]
+    filtered_valleys = valleys[
+        sc.concat(
+            [
+                has_peak[0],
+                has_peak[:-1] | has_peak[1:],
+                has_peak[-1],
+            ],
+            dim=has_peak.dim,
+        )
+    ]
     has_peak = peaks.bin(coarse_d=filtered_valleys).bins.size().data
     b = da.bin(coarse_d=filtered_valleys).assign_masks(
         no_peak=has_peak != sc.scalar(1, unit=None)
