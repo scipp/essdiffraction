@@ -17,6 +17,7 @@ def _make_pooch():
         env="ESS_DATA_DIR",
         base_url="https://public.esss.dk/groups/scipp/ess/beer/{version}/",
         version=_version,
+        retry_if_failed=3,
         registry={
             "duplex-mode07.h5": "md5:e8d44197e4bc6a84ab9265bfabd96efe",
             "duplex-mode08.h5": "md5:7cd2cf86d5d98fe07097ff98b250ba9b",
