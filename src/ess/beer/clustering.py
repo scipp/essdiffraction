@@ -30,11 +30,7 @@ def cluster_events_by_streak(da: DetectorData[RunType]) -> StreakClusteredData[R
         h.data.values.max() - h.data.values, distance=3, height=h.data.values.max() / 2
     )
 
-    valleys = sc.array(
-        dims=['coarse_d'],
-        values=h.coords['coarse_d'].values[i_valleys],
-        unit=h.coords['coarse_d'].unit,
-    )
+    valleys = h.coords['coarse_d'][i_valleys]
     peaks = sc.array(
         dims=['coarse_d'],
         values=h.coords['coarse_d'].values[i_peaks],
