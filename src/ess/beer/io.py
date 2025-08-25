@@ -44,12 +44,18 @@ def _unique_child_group_h5(
 
 
 def _load_beer_mcstas(f, bank=1):
+    for key in f['/entry1/instrument/components']:
+        if 'sampleMantid' in key:
+            sample_position_path = f'/entry1/instrument/components/{key}/Position'
+            break
+    else:
+        raise ValueError('Sample position entry not found in file.')
     data, events, params, sample_pos, chopper_pos = _load_h5(
         f,
         f'NXentry/NXdetector/bank{bank:02}_events_dat_list_p_x_y_n_id_t',
         f'NXentry/NXdetector/bank{bank:02}_events_dat_list_p_x_y_n_id_t/events',
         'NXentry/simulation/Param',
-        '/entry1/instrument/components/0189_sampleMantid/Position',
+        sample_position_path,
         '/entry1/instrument/components/0017_cMCA/Position',
     )
     events = events[()]
