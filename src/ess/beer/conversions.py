@@ -151,21 +151,40 @@ def tof_from_known_dhkl_graph(
     time0: WavelengthDefinitionChopperDelay,
     dhkl_list: DHKLList,
 ) -> TofCoordTransformGraph:
+    def _compute_coarse_dspacing(
+        event_time_offset,
+        theta: sc.Variable,
+        pulse_length: sc.Variable,
+        L0,
+    ):
+        '''To capture dhkl_list, otherwise it causes an error when
+        ``.transform_coords`` is called unless it is called with
+        ``keep_indermediates=False``.
+        The error happens because data arrays does not allow coordinates
+        with dimensions not present on the data.
+        '''
+        return _compute_d(
+            event_time_offset=event_time_offset,
+            theta=theta,
+            pulse_length=pulse_length,
+            L0=L0,
+            dhkl_list=dhkl_list,
+        )
+
     return {
         'pulse_length': lambda: pulse_length,
         'mod_period': lambda: mod_period,
         'time0': lambda: time0,
         'tof': _tof_from_dhkl,
-        'coarse_dhkl': _compute_d,
+        'coarse_dhkl': _compute_coarse_dspacing,
         'theta': lambda two_theta: two_theta / 2,
-        'dhkl_list': lambda: dhkl_list,
     }
 
 
 def compute_tof_from_known_peaks(
     da: DetectorData[RunType], graph: TofCoordTransformGraph
 ) -> DetectorTofData[RunType]:
-    return da.transform_coords(('tof',), graph=graph, keep_intermediate=False)
+    return da.transform_coords(('tof',), graph=graph)
 
 
 convert_from_known_peaks_providers = (
