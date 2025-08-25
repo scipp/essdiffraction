@@ -1,6 +1,6 @@
 import scipp as sc
 from scippneutron.conversion.tof import dspacing_from_tof
-from scipy.signal import find_peaks
+from scipy.signal import find_peaks, medfilt
 
 from .types import DetectorData, RunType, StreakClusteredData
 
@@ -21,7 +21,7 @@ def cluster_events_by_streak(da: DetectorData[RunType]) -> StreakClusteredData[R
 
     h = da.hist(coarse_d=1000)
     i_peaks, _ = find_peaks(
-        h.data.values, height=(2 * sc.values(h).median()).value, distance=3
+        h.data.values, height=medfilt(h.values, kernel_size=99), distance=3
     )
     i_valleys, _ = find_peaks(
         h.data.values.max() - h.data.values, distance=3, height=h.data.values.max() / 2
