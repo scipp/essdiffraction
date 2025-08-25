@@ -160,7 +160,7 @@ def tof_from_known_dhkl_graph(
         '''To capture dhkl_list, otherwise it causes an error when
         ``.transform_coords`` is called unless it is called with
         ``keep_indermediates=False``.
-        The error happens because data arrays does not allow coordinates
+        The error happens because data arrays do not allow coordinates
         with dimensions not present on the data.
         '''
         return _compute_d(
