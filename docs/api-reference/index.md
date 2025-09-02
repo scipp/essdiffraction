@@ -109,8 +109,8 @@
 .. autosummary::
    :toctree: ../generated/functions
 
-   BeerMcStasWorkflowKnownPeaks
-   BeerMcStasWorkflow
+   BeerModMcStasWorkflowKnownPeaks
+   BeerModMcStasWorkflow
 ```
 
 ### Top-level functions

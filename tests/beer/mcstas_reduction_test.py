@@ -3,7 +3,7 @@ import scipp as sc
 import scippneutron as scn
 from scipp.testing import assert_allclose
 
-from ess.beer import BeerMcStasWorkflow, BeerMcStasWorkflowKnownPeaks
+from ess.beer import BeerModMcStasWorkflow, BeerModMcStasWorkflowKnownPeaks
 from ess.beer.data import duplex_peaks_array, mcstas_duplex
 from ess.beer.types import DHKLList
 from ess.reduce.nexus.types import Filename, SampleRun
@@ -11,7 +11,7 @@ from ess.reduce.time_of_flight.types import DetectorTofData
 
 
 def test_can_reduce_using_known_peaks_workflow():
-    wf = BeerMcStasWorkflowKnownPeaks()
+    wf = BeerModMcStasWorkflowKnownPeaks()
     wf[DHKLList] = duplex_peaks_array()
     wf[Filename[SampleRun]] = mcstas_duplex(7)
     da = wf.compute(DetectorTofData[SampleRun])
@@ -34,7 +34,7 @@ def test_can_reduce_using_known_peaks_workflow():
 
 
 def test_can_reduce_using_unknown_peaks_workflow():
-    wf = BeerMcStasWorkflow()
+    wf = BeerModMcStasWorkflow()
     wf[Filename[SampleRun]] = mcstas_duplex(7)
     da = wf.compute(DetectorTofData[SampleRun])
     assert 'bank1' in da

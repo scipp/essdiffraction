@@ -23,8 +23,8 @@ default_parameters = {
 }
 
 
-def BeerMcStasWorkflow():
-    '''Workflow to process BEER McStas files without a list
+def BeerModMcStasWorkflow():
+    '''Workflow to process BEER (modulation regime) McStas files without a list
     of estimated peak positions.'''
     return sl.Pipeline(
         (*mcstas_providers, *clustering_providers, *conversion_providers),
@@ -33,8 +33,8 @@ def BeerMcStasWorkflow():
     )
 
 
-def BeerMcStasWorkflowKnownPeaks():
-    '''Workflow to process BEER McStas files using a list
+def BeerModMcStasWorkflowKnownPeaks():
+    '''Workflow to process BEER (modulation regime) McStas files using a list
     of estimated peak positions.'''
     return sl.Pipeline(
         (*mcstas_providers, *convert_from_known_peaks_providers),
