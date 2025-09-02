@@ -6,5 +6,5 @@
 ---
 maxdepth: 1
 ---
-beer_mcstas
+beer_modulation_mcstas
 ```
