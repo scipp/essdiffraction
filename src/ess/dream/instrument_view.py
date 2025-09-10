@@ -64,22 +64,35 @@ def instrument_view(
     return Box(view.children)
 
 
-def _to_data_group(data: sc.DataArray | sc.DataGroup | dict) -> sc.DataGroup:
+def _to_data_group(
+    data: sc.DataArray | sc.DataGroup | dict, dim: str | None
+) -> sc.DataGroup:
     if isinstance(data, sc.DataArray):
-        data = sc.DataGroup({data.name or "data": data})
-    elif isinstance(data, dict):
-        data = sc.DataGroup(data)
-    return data
+        # data = sc.DataGroup({data.name or "data": data})
+        data = {data.name or "data": data}
+    # elif isinstance(data, dict):
+    #     data = sc.DataGroup(data)
+
+    out = sc.DataGroup()
+    for key, da in data.items():
+        dims = list(da.dims)
+        if dim is not None:
+            dims.remove(dim)
+        flat = da.flatten(dims=dims, to="pixel")
+        sel = sc.isfinite(flat.coords["position"])
+        out[key] = flat[sel]
+    return out
+    # return data
 
 
-@pp.node
-def _pre_process(da: sc.DataArray, dim: str) -> sc.DataArray:
-    dims = list(da.dims)
-    if dim is not None:
-        dims.remove(dim)
-    out = da.flatten(dims=dims, to="pixel")
-    sel = sc.isfinite(out.coords["position"])
-    return out[sel]
+# @pp.node
+# def _pre_process(da: sc.DataArray, dim: str) -> sc.DataArray:
+#     dims = list(da.dims)
+#     if dim is not None:
+#         dims.remove(dim)
+#     out = da.flatten(dims=dims, to="pixel")
+#     sel = sc.isfinite(out.coords["position"])
+#     return out[sel]
 
 
 class InstrumentView:
@@ -94,10 +107,11 @@ class InstrumentView:
     ):
         from plopp.widgets import SliceWidget, slice_dims
 
-        self.data = _to_data_group(data)
-        self.pre_process_nodes = {
-            key: _pre_process(da, dim) for key, da in self.data.items()
-        }
+        self.data = _to_data_group(data, dim=dim)
+        self._nodes = {key: pp.Node(da) for key, da in self.data.items()}
+        # self.pre_process_nodes = {
+        #     key: _pre_process(da, dim) for key, da in self.data.items()
+        # }
 
         self.children = []
 
@@ -106,14 +120,13 @@ class InstrumentView:
             self.slider.controls[dim].slider.layout = {"width": "600px"}
             self.slider_node = pp.widget_node(self.slider)
             self.slice_nodes = {
-                key: slice_dims(n, self.slider_node)
-                for key, n in self.pre_process_nodes.items()
+                key: slice_dims(n, self.slider_node) for key, n in self._nodes.items()
             }
             to_scatter = self.slice_nodes
             self.children.append(self.slider)
         else:
-            self.slice_nodes = self.pre_process_nodes
-            to_scatter = self.pre_process_nodes
+            self.slice_nodes = self._nodes
+            to_scatter = self._nodes
 
         kwargs.setdefault('cbar', True)
         self.fig = pp.scatter3d(
@@ -132,9 +145,12 @@ class InstrumentView:
         import ipywidgets as ipw
 
         self.cutting_tool = self.fig.bottom_bar[0]
-        self._node_backup = list(self.cutting_tool._original_nodes)
+        self._node_backup = [n.id for n in self.cutting_tool._original_nodes]
+        # self.artist_mapping = dict(
+        #     zip(self.data.keys(), self.fig.artists.keys(), strict=True)
+        # )
         self.artist_mapping = dict(
-            zip(self.data.keys(), self.fig.artists.keys(), strict=True)
+            zip(self.data.keys(), self._node_backup, strict=True)
         )
         self.checkboxes = {
             key: ipw.Checkbox(
@@ -154,18 +170,22 @@ class InstrumentView:
         )
         for key, ch in self.checkboxes.items():
             ch.key = key
-            ch.observe(self._check_visibility, names="value")
+            ch.observe(self._toggle_visibility, names="value")
         self.children.insert(0, self.modules_widget)
 
-    def _check_visibility(self, _):
-        active_nodes = [
-            node_id
-            for key, node_id in self.artist_mapping.items()
-            if self.checkboxes[key].value
-        ]
-        for n in self._node_backup:
-            self.fig.artists[n.id].points.visible = n.id in active_nodes
-        self.cutting_tool._original_nodes = [
-            n for n in self._node_backup if n.id in active_nodes
-        ]
-        self.cutting_tool.update_state()
+    def _toggle_visibility(self, change) -> None:
+        key = change['owner'].key
+        print("Key is", key, "and new value is", change['new'])
+        self.fig.artists[self.artist_mapping[key]].points.visible = change['new']
+
+        # active_nodes = [
+        #     node_id
+        #     for key, node_id in self.artist_mapping.items()
+        #     if self.checkboxes[key].value
+        # ]
+        # for n in self._node_backup:
+        #     self.fig.artists[n.id].points.visible = n.id in active_nodes
+        # self.cutting_tool._original_nodes = [
+        #     n for n in self._node_backup if n.id in active_nodes
+        # ]
+        # self.cutting_tool.update_state()
