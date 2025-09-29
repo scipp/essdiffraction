@@ -30,7 +30,13 @@
 
 ## Quick links
 
-::::{grid} 3
+::::{grid} 2
+:gutter: 4
+
+:::{grid-item-card} BEER
+:link: user-guide/beer/index.md
+
+:::
 
 :::{grid-item-card} DREAM
 :link: user-guide/dream/index.md
@@ -63,8 +69,4 @@
 hidden:
 ---
 
-user-guide/index
-api-reference/index
-developer/index
-about/index
 ```
