@@ -212,7 +212,7 @@ def _rebin_to_tofrange(da):
     N = sc.sum(da.coords[dim] < period).value
     K = (da.coords[dim].max() // period + 1).to(dtype='int')
     grid = sc.linspace(dim, sc.scalar(0.0, unit=unit), K * period, K * (N - 1) + 1)
-    out = da.rebin(tof=grid).fold(dim, sizes={'_': K, dim: N - 1}).sum('_')
+    out = da.rebin({dim: grid}).fold(dim, sizes={'_': K, dim: N - 1}).sum('_')
     out.coords[dim] = sc.linspace(dim, sc.scalar(0.0, unit=unit), period, N)
     return out
 
@@ -244,9 +244,7 @@ def load_mcstas_monitor(
     tof = _to_edges(sc.array(dims=["tof"], values=tof, unit="us"))
     data = sc.DataArray(
         sc.array(dims=["tof"], values=counts, variances=err**2, unit="counts"),
-        coords={
-            "tof": tof,
-        },
+        coords={"tof": tof},
     )
     data = _rebin_to_tofrange(data)
     return NeXusComponent[CaveMonitor, RunType](
