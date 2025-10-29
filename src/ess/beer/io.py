@@ -4,6 +4,7 @@ from pathlib import Path
 
 import h5py
 import scipp as sc
+import scipp.constants
 
 from .types import (
     Filename,
@@ -44,20 +45,25 @@ def _unique_child_group_h5(
 
 
 def _load_beer_mcstas(f, bank=1):
-    for key in f['/entry1/instrument/components']:
-        if 'sampleMantid' in key:
-            sample_position_path = f'/entry1/instrument/components/{key}/Position'
-            break
-    else:
-        raise ValueError('Sample position entry not found in file.')
-    data, events, params, sample_pos, chopper_pos = _load_h5(
-        f,
-        f'NXentry/NXdetector/bank{bank:02}_events_dat_list_p_x_y_n_id_t',
-        f'NXentry/NXdetector/bank{bank:02}_events_dat_list_p_x_y_n_id_t/events',
-        'NXentry/simulation/Param',
-        sample_position_path,
-        '/entry1/instrument/components/0017_cMCA/Position',
+    positions = {
+        key: f'/entry1/instrument/components/{key}/Position'
+        for key in f['/entry1/instrument/components']
+    }
+    data, events, params, sample_pos, psc1_pos, psc2_pos, psc3_pos, mca_pos, mcc_pos = (
+        _load_h5(
+            f,
+            f'NXentry/NXdetector/bank{bank:02}_events_dat_list_p_x_y_n_id_t',
+            f'NXentry/NXdetector/bank{bank:02}_events_dat_list_p_x_y_n_id_t/events',
+            'NXentry/simulation/Param',
+            positions['sampleMantid'],
+            positions['PSC1'],
+            positions['PSC2'],
+            positions['PSC3'],
+            positions['MCA'],
+            positions['MCC'],
+        )
     )
+
     events = events[()]
     da = sc.DataArray(
         sc.array(dims=['events'], values=events[:, 0], variances=events[:, 0] ** 2),
@@ -75,21 +81,70 @@ def _load_beer_mcstas(f, bank=1):
         v = v[0]
         if isinstance(v, bytes):
             v = v.decode()
-        if k in ('mode', 'sample_filename'):
+        if k in ('mode', 'sample_filename', 'lambda'):
             da.coords[k] = sc.scalar(v)
+
+    if da.coords['lambda'].value == '0':
+        if da.coords['mode'].value in [
+            '0',
+            '3',
+            '4',
+            '5',
+            '6',
+            '7',
+            '8',
+            '9',
+            '10',
+            '15',
+            '16',
+        ]:
+            da.coords['lambda'] = sc.scalar(2.1, unit='angstrom')
+        elif da.coords['mode'].value in ['1', '2']:
+            da.coords['lambda'] = sc.scalar(3.1, unit='angstrom')
+        elif da.coords['mode'].value == '11':
+            da.coords['lambda'] = sc.scalar(3.0, unit='angstrom')
+        elif da.coords['mode'].value == '12':
+            da.coords['lambda'] = sc.scalar(3.5, unit='angstrom')
+        elif da.coords['mode'].value == '13':
+            da.coords['lambda'] = sc.scalar(6.0, unit='angstrom')
+        elif da.coords['mode'].value == '14':
+            da.coords['lambda'] = sc.scalar(4.0, unit='angstrom')
+    else:
+        da.coords['lambda'] = sc.scalar(
+            float(da.coords['lambda'].value), unit='angstrom'
+        )
 
     da.coords['sample_position'] = sc.vector(sample_pos[:], unit='m')
     da.coords['detector_position'] = sc.vector(
         list(map(float, da.coords.pop('position').value.split(' '))), unit='m'
     )
-    da.coords['chopper_position'] = sc.vector(chopper_pos[:], unit='m')
+
+    if da.coords['mode'].value in ['0', '1', '2', '11', '16']:
+        da.coords['chopper_position'] = sc.vector([0.0, 0.0, 0.0], unit='m')
+    elif da.coords['mode'].value in ['3', '4', '12', '13', '15']:
+        da.coords['chopper_position'] = sc.vector(
+            0.5 * (psc1_pos[:] + psc3_pos[:]), unit='m'
+        )
+    elif da.coords['mode'].value in ['5', '6']:
+        da.coords['chopper_position'] = sc.vector(
+            0.5 * (psc1_pos[:] + psc2_pos[:]), unit='m'
+        )
+    elif da.coords['mode'].value in ['7', '8', '9', '10']:
+        da.coords['chopper_position'] = sc.vector(0.5 * mca_pos[:], unit='m')
+    elif da.coords['mode'].value == '14':
+        da.coords['chopper_position'] = sc.vector(mcc_pos[:], unit='m')
+    else:
+        raise ValueError(f'Unkonwn chopper mode {da.coords["mode"].value}.')
+
     da.coords['x'].unit = 'm'
     da.coords['y'].unit = 'm'
     da.coords['t'].unit = 's'
 
     z = sc.norm(da.coords['detector_position'] - da.coords['sample_position'])
+    # z = da.coords['position'].fields.z - da.coords['sample_position'].fields.z
     L1 = sc.norm(da.coords['sample_position'] - da.coords['chopper_position'])
     L2 = sc.sqrt(da.coords['x'] ** 2 + da.coords['y'] ** 2 + z**2)
+
     # Source is assumed to be at the origin
     da.coords['L0'] = L1 + L2 + sc.norm(da.coords['chopper_position'])
     da.coords['Ltotal'] = L1 + L2
@@ -102,7 +157,17 @@ def _load_beer_mcstas(f, bank=1):
     da.coords.pop('y')
     da.coords.pop('n')
 
-    da.coords['event_time_offset'] = da.coords.pop('t')
+    # expression of temporal offset delta_t checked for pulse shaping mode: 4,5,6
+    delta_t = (
+        sc.constants.m_n
+        / sc.constants.h
+        * da.coords['lambda']
+        * sc.norm(da.coords['chopper_position']).to(unit='angstrom')
+    ).to(unit='s')
+
+    t = da.coords.pop('t')
+    da.coords['event_time_offset'] = t % sc.scalar(1 / 14, unit=t.unit)
+    da.coords["approximate_tof"] = da.coords['event_time_offset'] - delta_t
     return da
 
 
