@@ -46,8 +46,10 @@ def _unique_child_group_h5(
 
 def _load_beer_mcstas(f, bank=1):
     positions = {
-        key: f'/entry1/instrument/components/{key}/Position'
+        name: f'/entry1/instrument/components/{key}/Position'
         for key in f['/entry1/instrument/components']
+        for name in ['sampleMantid', 'PSC1', 'PSC2', 'PSC3', 'MCA', 'MCC']
+        if name in key
     }
     data, events, params, sample_pos, psc1_pos, psc2_pos, psc3_pos, mca_pos, mcc_pos = (
         _load_h5(
