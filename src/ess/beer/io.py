@@ -48,22 +48,32 @@ def _load_beer_mcstas(f, bank=1):
     positions = {
         name: f'/entry1/instrument/components/{key}/Position'
         for key in f['/entry1/instrument/components']
-        for name in ['sampleMantid', 'PSC1', 'PSC2', 'PSC3', 'MCA', 'MCC']
+        for name in ['sampleMantid', 'PSC1', 'PSC2', 'PSC3', 'MCA', 'MCB', 'MCC']
         if name in key
     }
-    data, events, params, sample_pos, psc1_pos, psc2_pos, psc3_pos, mca_pos, mcc_pos = (
-        _load_h5(
-            f,
-            f'NXentry/NXdetector/bank{bank:02}_events_dat_list_p_x_y_n_id_t',
-            f'NXentry/NXdetector/bank{bank:02}_events_dat_list_p_x_y_n_id_t/events',
-            'NXentry/simulation/Param',
-            positions['sampleMantid'],
-            positions['PSC1'],
-            positions['PSC2'],
-            positions['PSC3'],
-            positions['MCA'],
-            positions['MCC'],
-        )
+    (
+        data,
+        events,
+        params,
+        sample_pos,
+        psc1_pos,
+        psc2_pos,
+        psc3_pos,
+        mca_pos,
+        mcb_pos,
+        mcc_pos,
+    ) = _load_h5(
+        f,
+        f'NXentry/NXdetector/bank{bank:02}_events_dat_list_p_x_y_n_id_t',
+        f'NXentry/NXdetector/bank{bank:02}_events_dat_list_p_x_y_n_id_t/events',
+        'NXentry/simulation/Param',
+        positions['sampleMantid'],
+        positions['PSC1'],
+        positions['PSC2'],
+        positions['PSC3'],
+        positions['MCA'],
+        positions['MCB'],
+        positions['MCC'],
     )
 
     events = events[()]
@@ -86,7 +96,10 @@ def _load_beer_mcstas(f, bank=1):
         if k in ('mode', 'sample_filename', 'lambda'):
             da.coords[k] = sc.scalar(v)
 
-    if da.coords['lambda'].value == '0':
+    if 'lambda' in da.coords:
+        da.coords['wavelength_estimate'] = da.coords.pop('lambda')
+
+    if da.coords['wavelength_estimate'].value == '0':
         if da.coords['mode'].value in [
             '0',
             '3',
@@ -100,20 +113,20 @@ def _load_beer_mcstas(f, bank=1):
             '15',
             '16',
         ]:
-            da.coords['lambda'] = sc.scalar(2.1, unit='angstrom')
+            da.coords['wavelength_estimate'] = sc.scalar(2.1, unit='angstrom')
         elif da.coords['mode'].value in ['1', '2']:
-            da.coords['lambda'] = sc.scalar(3.1, unit='angstrom')
+            da.coords['wavelength_estimate'] = sc.scalar(3.1, unit='angstrom')
         elif da.coords['mode'].value == '11':
-            da.coords['lambda'] = sc.scalar(3.0, unit='angstrom')
+            da.coords['wavelength_estimate'] = sc.scalar(3.0, unit='angstrom')
         elif da.coords['mode'].value == '12':
-            da.coords['lambda'] = sc.scalar(3.5, unit='angstrom')
+            da.coords['wavelength_estimate'] = sc.scalar(3.5, unit='angstrom')
         elif da.coords['mode'].value == '13':
-            da.coords['lambda'] = sc.scalar(6.0, unit='angstrom')
+            da.coords['wavelength_estimate'] = sc.scalar(6.0, unit='angstrom')
         elif da.coords['mode'].value == '14':
-            da.coords['lambda'] = sc.scalar(4.0, unit='angstrom')
+            da.coords['wavelength_estimate'] = sc.scalar(4.0, unit='angstrom')
     else:
-        da.coords['lambda'] = sc.scalar(
-            float(da.coords['lambda'].value), unit='angstrom'
+        da.coords['wavelength_estimate'] = sc.scalar(
+            float(da.coords['wavelength_estimate'].value), unit='angstrom'
         )
 
     da.coords['sample_position'] = sc.vector(sample_pos[:], unit='m')
@@ -121,7 +134,7 @@ def _load_beer_mcstas(f, bank=1):
         list(map(float, da.coords.pop('position').value.split(' '))), unit='m'
     )
 
-    if da.coords['mode'].value in ['0', '1', '2', '11', '16']:
+    if da.coords['mode'].value in ['0', '1', '2', '11']:
         da.coords['chopper_position'] = sc.vector([0.0, 0.0, 0.0], unit='m')
     elif da.coords['mode'].value in ['3', '4', '12', '13', '15']:
         da.coords['chopper_position'] = sc.vector(
@@ -132,9 +145,13 @@ def _load_beer_mcstas(f, bank=1):
             0.5 * (psc1_pos[:] + psc2_pos[:]), unit='m'
         )
     elif da.coords['mode'].value in ['7', '8', '9', '10']:
-        da.coords['chopper_position'] = sc.vector(0.5 * mca_pos[:], unit='m')
+        da.coords['chopper_position'] = sc.vector(mca_pos[:], unit='m')
     elif da.coords['mode'].value == '14':
         da.coords['chopper_position'] = sc.vector(mcc_pos[:], unit='m')
+    elif da.coords['mode'].value == '16':
+        da.coords['chopper_position'] = sc.vector(
+            0.5 * (mca_pos[:] + mcb_pos[:]), unit='m'
+        )
     else:
         raise ValueError(f'Unkonwn chopper mode {da.coords["mode"].value}.')
 
@@ -143,7 +160,6 @@ def _load_beer_mcstas(f, bank=1):
     da.coords['t'].unit = 's'
 
     z = sc.norm(da.coords['detector_position'] - da.coords['sample_position'])
-    # z = da.coords['position'].fields.z - da.coords['sample_position'].fields.z
     L1 = sc.norm(da.coords['sample_position'] - da.coords['chopper_position'])
     L2 = sc.sqrt(da.coords['x'] ** 2 + da.coords['y'] ** 2 + z**2)
 
@@ -159,17 +175,15 @@ def _load_beer_mcstas(f, bank=1):
     da.coords.pop('y')
     da.coords.pop('n')
 
-    # expression of temporal offset delta_t checked for pulse shaping mode: 4,5,6
-    delta_t = (
+    t = da.coords.pop('t')
+    da.coords['event_time_offset'] = t % sc.scalar(1 / 14, unit='s').to(unit=t.unit)
+    da.coords["tc"] = (
         sc.constants.m_n
         / sc.constants.h
-        * da.coords['lambda']
-        * sc.norm(da.coords['chopper_position']).to(unit='angstrom')
-    ).to(unit='s')
+        * da.coords['wavelength_estimate']
+        * da.coords['L0'].min().to(unit='angstrom')
+    ).to(unit='s') - sc.scalar(1 / 14, unit='s') / 2
 
-    t = da.coords.pop('t')
-    da.coords['event_time_offset'] = t % sc.scalar(1 / 14, unit=t.unit)
-    da.coords["approximate_tof"] = da.coords['event_time_offset'] - delta_t
     return da
 
 
@@ -218,10 +232,8 @@ def mcstas_chopper_delay_from_mode(
     da: RawDetector[SampleRun],
 ) -> WavelengthDefinitionChopperDelay:
     mode = next(iter(d.coords['mode'] for d in da.values())).value
-    if mode in ('7', '8'):
-        return sc.scalar(0.00245635, unit='s')
-    if mode in ('9', '10'):
-        return sc.scalar(0.0033730158730158727, unit='s')
+    if mode in ('7', '8', '9', '10'):
+        return sc.scalar(0.0024730158730158727, unit='s')
     if mode == '16':
         return sc.scalar(0.000876984126984127, unit='s')
     raise ValueError(f'Mode {mode} is not known.')

@@ -38,7 +38,10 @@ def compute_tof_in_each_cluster(
 
     max_distance_from_streak_line = mod_period / 3
     sin_theta_L = sc.sin(da.bins.coords['two_theta'] / 2) * da.bins.coords['Ltotal']
-    t = da.bins.coords['event_time_offset']
+    t = _time_of_arrival(
+        da.bins.coords['event_time_offset'],
+        da.coords['tc'].to(unit=da.bins.coords['event_time_offset'].unit),
+    )
     for _ in range(15):
         s, t0 = _linear_regression_by_bin(sin_theta_L, t, da.data)
 
@@ -77,7 +80,7 @@ def _linear_regression_by_bin(
 
 
 def _compute_d(
-    event_time_offset: sc.Variable,
+    time_of_arrival: sc.Variable,
     theta: sc.Variable,
     dhkl_list: sc.Variable,
     pulse_length: sc.Variable,
@@ -87,7 +90,7 @@ def _compute_d(
     given a list of known peaks."""
     # Source: https://www2.mcstas.org/download/components/3.4/contrib/NPI_tof_dhkl_detector.comp
     sinth = sc.sin(theta)
-    t = event_time_offset
+    t = time_of_arrival
 
     d = sc.empty(dims=sinth.dims, shape=sinth.shape, unit=dhkl_list[0].unit)
     d[:] = sc.scalar(float('nan'), unit=dhkl_list[0].unit)
@@ -95,7 +98,7 @@ def _compute_d(
     dtfound[:] = sc.scalar(float('nan'), unit=t.unit)
 
     const = (2 * sinth * L0 / (scipp.constants.h / scipp.constants.m_n)).to(
-        unit=f'{event_time_offset.unit}/angstrom'
+        unit=f'{time_of_arrival.unit}/angstrom'
     )
 
     for dhkl in dhkl_list:
@@ -112,8 +115,18 @@ def _compute_d(
     return d
 
 
-def _tof_from_dhkl(
+def _time_of_arrival(
     event_time_offset: sc.Variable,
+    tc: sc.Variable,
+):
+    _eto = event_time_offset
+    T = sc.scalar(1 / 14, unit='s').to(unit=_eto.unit)
+    tc = tc.to(unit=_eto.unit)
+    return sc.where(_eto >= tc % T, _eto, _eto + T)
+
+
+def _tof_from_dhkl(
+    time_of_arrival: sc.Variable,
     theta: sc.Variable,
     coarse_dhkl: sc.Variable,
     Ltotal: sc.Variable,
@@ -123,17 +136,17 @@ def _tof_from_dhkl(
     '''Computes tof for BEER given the dhkl peak that the event belongs to'''
     # Source: https://www2.mcstas.org/download/components/3.4/contrib/NPI_tof_dhkl_detector.comp
     # tref = 2 * d_hkl * sin(theta) / hm * Ltotal
-    # tc = event_time_zero - time0 - tref
+    # tc = time_of_arrival - time0 - tref
     # dt = floor(tc / mod_period + 0.5) * mod_period + time0
-    # tof = event_time_offset - dt
+    # tof = time_of_arrival - dt
     c = (-2 * 1.0 / (scipp.constants.h / scipp.constants.m_n)).to(
-        unit=f'{event_time_offset.unit}/m/angstrom'
+        unit=f'{time_of_arrival.unit}/m/angstrom'
     )
     out = sc.sin(theta)
     out *= c
     out *= coarse_dhkl
     out *= Ltotal
-    out += event_time_offset
+    out += time_of_arrival
     out -= time0
     out /= mod_period
     out += 0.5
@@ -141,7 +154,7 @@ def _tof_from_dhkl(
     out *= mod_period
     out += time0
     out *= -1
-    out += event_time_offset
+    out += time_of_arrival
     return out
 
 
@@ -152,10 +165,10 @@ def tof_from_known_dhkl_graph(
     dhkl_list: DHKLList,
 ) -> TofCoordTransformGraph:
     def _compute_coarse_dspacing(
-        event_time_offset,
+        time_of_arrival: sc.Variable,
         theta: sc.Variable,
         pulse_length: sc.Variable,
-        L0,
+        L0: sc.Variable,
     ):
         '''To capture dhkl_list, otherwise it causes an error when
         ``.transform_coords`` is called unless it is called with
@@ -164,7 +177,7 @@ def tof_from_known_dhkl_graph(
         with dimensions not present on the data.
         '''
         return _compute_d(
-            event_time_offset=event_time_offset,
+            time_of_arrival=time_of_arrival,
             theta=theta,
             pulse_length=pulse_length,
             L0=L0,
@@ -176,12 +189,41 @@ def tof_from_known_dhkl_graph(
         'mod_period': lambda: mod_period,
         'time0': lambda: time0,
         'tof': _tof_from_dhkl,
+        'time_of_arrival': _time_of_arrival,
         'coarse_dhkl': _compute_coarse_dspacing,
         'theta': lambda two_theta: two_theta / 2,
     }
 
 
-def compute_tof_from_known_peaks(
+def _t0_estimate(
+    wavelength_estimate: sc.Variable,
+    L0: sc.Variable,
+    Ltotal: sc.Variable,
+) -> sc.Variable:
+    return (
+        sc.constants.m_n
+        / sc.constants.h
+        * wavelength_estimate
+        * (L0 - Ltotal).to(unit=wavelength_estimate.unit)
+    ).to(unit='s')
+
+
+def _tof_from_t0_estimate(
+    time_of_arrival: sc.Variable,
+    t0_estimate: sc.Variable,
+) -> sc.Variable:
+    return time_of_arrival - t0_estimate
+
+
+def tof_from_t0_estimate() -> TofCoordTransformGraph:
+    return {
+        't0_estimate': _t0_estimate,
+        'tof': _tof_from_t0_estimate,
+        'time_of_arrival': _time_of_arrival,
+    }
+
+
+def compute_tof(
     da: RawDetector[RunType], graph: TofCoordTransformGraph
 ) -> TofDetector[RunType]:
     return da.transform_coords(('tof',), graph=graph)
@@ -189,6 +231,10 @@ def compute_tof_from_known_peaks(
 
 convert_from_known_peaks_providers = (
     tof_from_known_dhkl_graph,
-    compute_tof_from_known_peaks,
+    compute_tof,
+)
+convert_pulse_shaping = (
+    tof_from_t0_estimate,
+    compute_tof,
 )
 providers = (compute_tof_in_each_cluster,)

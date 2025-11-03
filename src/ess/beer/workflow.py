@@ -4,7 +4,7 @@ import sciline as sl
 import scipp as sc
 
 from .clustering import providers as clustering_providers
-from .conversions import convert_from_known_peaks_providers
+from .conversions import convert_from_known_peaks_providers, convert_pulse_shaping
 from .conversions import providers as conversion_providers
 from .io import mcstas_providers
 from .types import (
@@ -38,6 +38,15 @@ def BeerModMcStasWorkflowKnownPeaks():
     of estimated peak positions.'''
     return sl.Pipeline(
         (*mcstas_providers, *convert_from_known_peaks_providers),
+        params=default_parameters,
+        constraints={RunType: (SampleRun,)},
+    )
+
+
+def BeerMcStasWorkflowPulseShaping():
+    '''Workflow to process BEER (pulse shaping modes) McStas files'''
+    return sl.Pipeline(
+        (*mcstas_providers, *convert_pulse_shaping),
         params=default_parameters,
         constraints={RunType: (SampleRun,)},
     )
