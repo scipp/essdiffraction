@@ -231,11 +231,34 @@ def load_beer_mcstas_provider(
 def mcstas_chopper_delay_from_mode(
     da: RawDetector[SampleRun],
 ) -> WavelengthDefinitionChopperDelay:
+    '''These settings are good for the set of McStas runs that we
+    use in the docs currently.
+    Eventually we will want to determine this from the chopper information
+    in the files, but that information is not in the simulation output.'''
     mode = next(iter(d.coords['mode'] for d in da.values())).value
     if mode in ('7', '8', '9', '10'):
         return sc.scalar(0.0024730158730158727, unit='s')
     if mode == '16':
         return sc.scalar(0.000876984126984127, unit='s')
+    raise ValueError(f'Mode {mode} is not known.')
+
+
+def mcstas_chopper_delay_from_mode_new_simulations(
+    da: RawDetector[SampleRun],
+) -> WavelengthDefinitionChopperDelay:
+    '''Celine has a new simulation with some changes to the chopper placement(?).
+    For those simulations we need to adapt the chopper delay values.'''
+    mode = next(iter(d.coords['mode'] for d in da.values())).value
+    if mode == '7':
+        return sc.scalar(0.001370158730158727, unit='s')
+    if mode == '8':
+        return sc.scalar(0.001370158730158727, unit='s')
+    if mode == '9':
+        return sc.scalar(0.0022630158730158727, unit='s')
+    if mode == '10':
+        return sc.scalar(0.0022630158730158727, unit='s')
+    if mode == '16':
+        return sc.scalar(0.000476984126984127, unit='s')
     raise ValueError(f'Mode {mode} is not known.')
 
 
