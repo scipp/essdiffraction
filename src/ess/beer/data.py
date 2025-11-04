@@ -65,8 +65,7 @@ def mcstas_silicon_medium_resolution() -> Path:
 
 def mcstas_silicon_new_model(mode: int) -> Path:
     """
-    Simulated intensity from silicon sample with
-    medium resolution chopper configuration.
+    Simulated intensity from duplex sample with ``mode`` chopper configuration.
     """
     return _registry.get_path(f'silicon-mode{mode}-new-model.h5')
 
