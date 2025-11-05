@@ -44,6 +44,63 @@ def _unique_child_group_h5(
     return out
 
 
+def _wavelength_estimate_from_mode(mode, value_in_file):
+    if value_in_file != '0':
+        return sc.scalar(float(value_in_file), unit='angstrom')
+    if mode in [
+        '0',
+        '3',
+        '4',
+        '5',
+        '6',
+        '7',
+        '8',
+        '9',
+        '10',
+        '15',
+        '16',
+    ]:
+        return sc.scalar(2.1, unit='angstrom')
+    elif mode in ['1', '2']:
+        return sc.scalar(3.1, unit='angstrom')
+    elif mode == '11':
+        return sc.scalar(3.0, unit='angstrom')
+    elif mode == '12':
+        return sc.scalar(3.5, unit='angstrom')
+    elif mode == '13':
+        return sc.scalar(6.0, unit='angstrom')
+    elif mode == '14':
+        return sc.scalar(4.0, unit='angstrom')
+    else:
+        raise ValueError(f'Unkonwn chopper mode {mode}.')
+
+
+def _chopper_position_from_mode(
+    mode,
+    *,
+    psc1_pos,
+    psc2_pos,
+    psc3_pos,
+    mca_pos,
+    mcb_pos,
+    mcc_pos,
+):
+    if mode in ['0', '1', '2', '11']:
+        return sc.vector([0.0, 0.0, 0.0], unit='m')
+    elif mode in ['3', '4', '12', '13', '15']:
+        return sc.vector(0.5 * (psc1_pos + psc3_pos), unit='m')
+    elif mode in ['5', '6']:
+        return sc.vector(0.5 * (psc1_pos + psc2_pos), unit='m')
+    elif mode in ['7', '8', '9', '10']:
+        return sc.vector(mca_pos, unit='m')
+    elif mode == '14':
+        return sc.vector(mcc_pos, unit='m')
+    elif mode == '16':
+        return sc.vector(0.5 * (mca_pos + mcb_pos), unit='m')
+    else:
+        raise ValueError(f'Unkonwn chopper mode {mode}.')
+
+
 def _load_beer_mcstas(f, bank=1):
     positions = {
         name: f'/entry1/instrument/components/{key}/Position'
@@ -96,64 +153,25 @@ def _load_beer_mcstas(f, bank=1):
         if k in ('mode', 'sample_filename', 'lambda'):
             da.coords[k] = sc.scalar(v)
 
-    if 'lambda' in da.coords:
-        da.coords['wavelength_estimate'] = da.coords.pop('lambda')
+    da.coords['wavelength_estimate'] = _wavelength_estimate_from_mode(
+        da.coords['mode'].value,
+        da.coords.pop('lambda').value if 'lambda' in da.coords else '0',
+    )
 
-    if da.coords['wavelength_estimate'].value == '0':
-        if da.coords['mode'].value in [
-            '0',
-            '3',
-            '4',
-            '5',
-            '6',
-            '7',
-            '8',
-            '9',
-            '10',
-            '15',
-            '16',
-        ]:
-            da.coords['wavelength_estimate'] = sc.scalar(2.1, unit='angstrom')
-        elif da.coords['mode'].value in ['1', '2']:
-            da.coords['wavelength_estimate'] = sc.scalar(3.1, unit='angstrom')
-        elif da.coords['mode'].value == '11':
-            da.coords['wavelength_estimate'] = sc.scalar(3.0, unit='angstrom')
-        elif da.coords['mode'].value == '12':
-            da.coords['wavelength_estimate'] = sc.scalar(3.5, unit='angstrom')
-        elif da.coords['mode'].value == '13':
-            da.coords['wavelength_estimate'] = sc.scalar(6.0, unit='angstrom')
-        elif da.coords['mode'].value == '14':
-            da.coords['wavelength_estimate'] = sc.scalar(4.0, unit='angstrom')
-    else:
-        da.coords['wavelength_estimate'] = sc.scalar(
-            float(da.coords['wavelength_estimate'].value), unit='angstrom'
-        )
+    da.coords['chopper_position'] = _chopper_position_from_mode(
+        da.coords['mode'].value,
+        psc1_pos=psc1_pos[:],
+        psc2_pos=psc2_pos[:],
+        psc3_pos=psc3_pos[:],
+        mca_pos=mca_pos[:],
+        mcb_pos=mcb_pos[:],
+        mcc_pos=mcc_pos[:],
+    )
 
     da.coords['sample_position'] = sc.vector(sample_pos[:], unit='m')
     da.coords['detector_position'] = sc.vector(
         list(map(float, da.coords.pop('position').value.split(' '))), unit='m'
     )
-
-    if da.coords['mode'].value in ['0', '1', '2', '11']:
-        da.coords['chopper_position'] = sc.vector([0.0, 0.0, 0.0], unit='m')
-    elif da.coords['mode'].value in ['3', '4', '12', '13', '15']:
-        da.coords['chopper_position'] = sc.vector(
-            0.5 * (psc1_pos[:] + psc3_pos[:]), unit='m'
-        )
-    elif da.coords['mode'].value in ['5', '6']:
-        da.coords['chopper_position'] = sc.vector(
-            0.5 * (psc1_pos[:] + psc2_pos[:]), unit='m'
-        )
-    elif da.coords['mode'].value in ['7', '8', '9', '10']:
-        da.coords['chopper_position'] = sc.vector(mca_pos[:], unit='m')
-    elif da.coords['mode'].value == '14':
-        da.coords['chopper_position'] = sc.vector(mcc_pos[:], unit='m')
-    elif da.coords['mode'].value == '16':
-        da.coords['chopper_position'] = sc.vector(
-            0.5 * (mca_pos[:] + mcb_pos[:]), unit='m'
-        )
-    else:
-        raise ValueError(f'Unkonwn chopper mode {da.coords["mode"].value}.')
 
     da.coords['x'].unit = 'm'
     da.coords['y'].unit = 'm'
