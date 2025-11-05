@@ -119,7 +119,7 @@ def time_of_arrival(
     event_time_offset: sc.Variable,
     tc: sc.Variable,
 ):
-    '''Does frame unwrapping based on the cutoff time `tc` and `event_time_ffset`.
+    '''Does frame unwrapping based on the cutoff time ``tc`` and ``event_time_offset``.
     Events before `tc` are assumed to come from the previous pulse.'''
     _eto = event_time_offset
     T = sc.scalar(1 / 14, unit='s').to(unit=_eto.unit)
