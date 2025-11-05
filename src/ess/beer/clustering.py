@@ -2,7 +2,7 @@ import scipp as sc
 from scippneutron.conversion.tof import dspacing_from_tof
 from scipy.signal import find_peaks, medfilt
 
-from .conversions import _t0_estimate, _time_of_arrival
+from .conversions import t0_estimate, time_of_arrival
 from .types import RawDetector, RunType, StreakClusteredData
 
 
@@ -11,11 +11,11 @@ def cluster_events_by_streak(da: RawDetector[RunType]) -> StreakClusteredData[Ru
         return sc.DataGroup({k: cluster_events_by_streak(v) for k, v in da.items()})
     da = da.copy(deep=False)
 
-    t = _time_of_arrival(
+    t = time_of_arrival(
         da.coords['event_time_offset'],
         da.coords['tc'].to(unit=da.coords['event_time_offset'].unit),
     )
-    approximate_t0 = _t0_estimate(
+    approximate_t0 = t0_estimate(
         da.coords['wavelength_estimate'], da.coords['L0'], da.coords['Ltotal']
     ).to(unit=t.unit)
 

@@ -38,7 +38,7 @@ def compute_tof_in_each_cluster(
 
     max_distance_from_streak_line = mod_period / 3
     sin_theta_L = sc.sin(da.bins.coords['two_theta'] / 2) * da.bins.coords['Ltotal']
-    t = _time_of_arrival(
+    t = time_of_arrival(
         da.bins.coords['event_time_offset'],
         da.coords['tc'].to(unit=da.bins.coords['event_time_offset'].unit),
     )
@@ -115,7 +115,7 @@ def _compute_d(
     return d
 
 
-def _time_of_arrival(
+def time_of_arrival(
     event_time_offset: sc.Variable,
     tc: sc.Variable,
 ):
@@ -189,13 +189,13 @@ def tof_from_known_dhkl_graph(
         'mod_period': lambda: mod_period,
         'time0': lambda: time0,
         'tof': _tof_from_dhkl,
-        'time_of_arrival': _time_of_arrival,
+        'time_of_arrival': time_of_arrival,
         'coarse_dhkl': _compute_coarse_dspacing,
         'theta': lambda two_theta: two_theta / 2,
     }
 
 
-def _t0_estimate(
+def t0_estimate(
     wavelength_estimate: sc.Variable,
     L0: sc.Variable,
     Ltotal: sc.Variable,
@@ -208,18 +208,18 @@ def _t0_estimate(
     ).to(unit='s')
 
 
-def _tof_from_t0_estimate(
+def _tof_from_t0(
     time_of_arrival: sc.Variable,
-    t0_estimate: sc.Variable,
+    t0: sc.Variable,
 ) -> sc.Variable:
-    return time_of_arrival - t0_estimate
+    return time_of_arrival - t0
 
 
 def tof_from_t0_estimate() -> TofCoordTransformGraph:
     return {
-        't0_estimate': _t0_estimate,
-        'tof': _tof_from_t0_estimate,
-        'time_of_arrival': _time_of_arrival,
+        't0': t0_estimate,
+        'tof': _tof_from_t0,
+        'time_of_arrival': time_of_arrival,
     }
 
 
