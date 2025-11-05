@@ -119,8 +119,9 @@ def time_of_arrival(
     event_time_offset: sc.Variable,
     tc: sc.Variable,
 ):
-    '''Does frame unwrapping based on the cutoff time ``tc`` and ``event_time_offset``.
-    Events before `tc` are assumed to come from the previous pulse.'''
+    '''Does frame unwrapping for pulse shaping chopper modes.
+
+    Events before the "cutoff time" `tc` are assumed to come from the previous pulse.'''
     _eto = event_time_offset
     T = sc.scalar(1 / 14, unit='s').to(unit=_eto.unit)
     tc = tc.to(unit=_eto.unit)
@@ -166,6 +167,9 @@ def tof_from_known_dhkl_graph(
     time0: WavelengthDefinitionChopperDelay,
     dhkl_list: DHKLList,
 ) -> TofCoordTransformGraph:
+    '''Graph computing ``tof`` in modulation chopper modes using
+    list of peak positions.'''
+
     def _compute_coarse_dspacing(
         time_of_arrival: sc.Variable,
         theta: sc.Variable,
@@ -220,6 +224,7 @@ def _tof_from_t0(
 
 
 def tof_from_t0_estimate() -> TofCoordTransformGraph:
+    '''Graph for computing ``tof`` in pulse shaping chopper modes.'''
     return {
         't0': t0_estimate,
         'tof': _tof_from_t0,
@@ -230,6 +235,7 @@ def tof_from_t0_estimate() -> TofCoordTransformGraph:
 def compute_tof(
     da: RawDetector[RunType], graph: TofCoordTransformGraph
 ) -> TofDetector[RunType]:
+    '''Uses the transformation graph to compute ``tof``.'''
     return da.transform_coords(('tof',), graph=graph)
 
 
