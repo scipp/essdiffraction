@@ -124,7 +124,7 @@ def time_of_arrival(
     _eto = event_time_offset
     T = sc.scalar(1 / 14, unit='s').to(unit=_eto.unit)
     tc = tc.to(unit=_eto.unit)
-    return sc.where(_eto >= tc % T, _eto, _eto + T)
+    return sc.where(_eto >= tc, _eto, _eto + T)
 
 
 def _tof_from_dhkl(
