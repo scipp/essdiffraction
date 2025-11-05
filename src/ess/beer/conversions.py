@@ -119,6 +119,8 @@ def time_of_arrival(
     event_time_offset: sc.Variable,
     tc: sc.Variable,
 ):
+    '''Does frame unwrapping based on the cutoff time `tc` and `event_time_ffset`.
+    Events before `tc` are assumed to come from the previous pulse.'''
     _eto = event_time_offset
     T = sc.scalar(1 / 14, unit='s').to(unit=_eto.unit)
     tc = tc.to(unit=_eto.unit)
@@ -200,6 +202,7 @@ def t0_estimate(
     L0: sc.Variable,
     Ltotal: sc.Variable,
 ) -> sc.Variable:
+    '''Estimates the time-at-chopper by assuming the wavelength.'''
     return (
         sc.constants.m_n
         / sc.constants.h
@@ -212,6 +215,7 @@ def _tof_from_t0(
     time_of_arrival: sc.Variable,
     t0: sc.Variable,
 ) -> sc.Variable:
+    '''Computes time-of-flight by subtracting a start time.'''
     return time_of_arrival - t0
 
 
