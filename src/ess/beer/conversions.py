@@ -18,7 +18,7 @@ def compute_tof_in_each_cluster(
     da: StreakClusteredData[RunType],
     mod_period: ModulationPeriod,
 ) -> TofDetector[RunType]:
-    '''Fits a line through each cluster, the intercept of the line is t0.
+    """Fits a line through each cluster, the intercept of the line is t0.
     The line is fitted using linear regression with an outlier removal procedure.
 
     The algorithm is:
@@ -30,7 +30,7 @@ def compute_tof_in_each_cluster(
        of the points in the cluster, and probably should belong to another cluster or
        are part of the background.
     3. Go back to 1) and iterate until convergence. A few iterations should be enough.
-    '''
+    """
     if isinstance(da, sc.DataGroup):
         return sc.DataGroup(
             {k: compute_tof_in_each_cluster(v, mod_period) for k, v in da.items()}
@@ -60,10 +60,10 @@ def compute_tof_in_each_cluster(
 def _linear_regression_by_bin(
     x: sc.Variable, y: sc.Variable, w: sc.Variable
 ) -> tuple[sc.Variable, sc.Variable]:
-    '''Performs a weighted linear regression of the points
+    """Performs a weighted linear regression of the points
     in the binned variables ``x`` and ``y`` weighted by ``w``.
     Returns ``b1`` and ``b0`` such that ``y = b1 * x + b0``.
-    '''
+    """
     w = sc.values(w)
     tot_w = w.bins.sum()
 
@@ -119,9 +119,9 @@ def time_of_arrival(
     event_time_offset: sc.Variable,
     tc: sc.Variable,
 ):
-    '''Does frame unwrapping for pulse shaping chopper modes.
+    """Does frame unwrapping for pulse shaping chopper modes.
 
-    Events before the "cutoff time" `tc` are assumed to come from the previous pulse.'''
+    Events before the "cutoff time" `tc` are assumed to come from the previous pulse."""
     _eto = event_time_offset
     T = sc.scalar(1 / 14, unit='s').to(unit=_eto.unit)
     tc = tc.to(unit=_eto.unit)
@@ -136,7 +136,7 @@ def _tof_from_dhkl(
     mod_period: sc.Variable,
     time0: sc.Variable,
 ) -> sc.Variable:
-    '''Computes tof for BEER given the dhkl peak that the event belongs to'''
+    """Computes tof for BEER given the dhkl peak that the event belongs to"""
     # Source: https://www2.mcstas.org/download/components/3.4/contrib/NPI_tof_dhkl_detector.comp
     # tref = 2 * d_hkl * sin(theta) / hm * Ltotal
     # tc = time_of_arrival - time0 - tref
@@ -167,8 +167,8 @@ def tof_from_known_dhkl_graph(
     time0: WavelengthDefinitionChopperDelay,
     dhkl_list: DHKLList,
 ) -> TofCoordTransformGraph:
-    '''Graph computing ``tof`` in modulation chopper modes using
-    list of peak positions.'''
+    """Graph computing ``tof`` in modulation chopper modes using
+    list of peak positions."""
 
     def _compute_coarse_dspacing(
         time_of_arrival: sc.Variable,
@@ -176,12 +176,12 @@ def tof_from_known_dhkl_graph(
         pulse_length: sc.Variable,
         L0: sc.Variable,
     ):
-        '''To capture dhkl_list, otherwise it causes an error when
+        """To capture dhkl_list, otherwise it causes an error when
         ``.transform_coords`` is called unless it is called with
         ``keep_indermediates=False``.
         The error happens because data arrays do not allow coordinates
         with dimensions not present on the data.
-        '''
+        """
         return _compute_d(
             time_of_arrival=time_of_arrival,
             theta=theta,
@@ -206,7 +206,7 @@ def t0_estimate(
     L0: sc.Variable,
     Ltotal: sc.Variable,
 ) -> sc.Variable:
-    '''Estimates the time-at-chopper by assuming the wavelength.'''
+    """Estimates the time-at-chopper by assuming the wavelength."""
     return (
         sc.constants.m_n
         / sc.constants.h
@@ -219,12 +219,12 @@ def _tof_from_t0(
     time_of_arrival: sc.Variable,
     t0: sc.Variable,
 ) -> sc.Variable:
-    '''Computes time-of-flight by subtracting a start time.'''
+    """Computes time-of-flight by subtracting a start time."""
     return time_of_arrival - t0
 
 
 def tof_from_t0_estimate_graph() -> TofCoordTransformGraph:
-    '''Graph for computing ``tof`` in pulse shaping chopper modes.'''
+    """Graph for computing ``tof`` in pulse shaping chopper modes."""
     return {
         't0': t0_estimate,
         'tof': _tof_from_t0,
@@ -235,7 +235,7 @@ def tof_from_t0_estimate_graph() -> TofCoordTransformGraph:
 def compute_tof(
     da: RawDetector[RunType], graph: TofCoordTransformGraph
 ) -> TofDetector[RunType]:
-    '''Uses the transformation graph to compute ``tof``.'''
+    """Uses the transformation graph to compute ``tof``."""
     return da.transform_coords(('tof',), graph=graph)
 
 
