@@ -223,7 +223,7 @@ def _tof_from_t0(
     return time_of_arrival - t0
 
 
-def tof_from_t0_estimate() -> TofCoordTransformGraph:
+def tof_from_t0_estimate_graph() -> TofCoordTransformGraph:
     '''Graph for computing ``tof`` in pulse shaping chopper modes.'''
     return {
         't0': t0_estimate,
@@ -244,7 +244,7 @@ convert_from_known_peaks_providers = (
     compute_tof,
 )
 convert_pulse_shaping = (
-    tof_from_t0_estimate,
+    tof_from_t0_estimate_graph,
     compute_tof,
 )
 providers = (compute_tof_in_each_cluster,)
