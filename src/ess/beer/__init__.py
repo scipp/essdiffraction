@@ -9,6 +9,7 @@ import importlib.metadata
 
 from .io import load_beer_mcstas
 from .workflow import (
+    BeerMcStasWorkflowPulseShaping,
     BeerModMcStasWorkflow,
     BeerModMcStasWorkflowKnownPeaks,
     default_parameters,
@@ -22,6 +23,7 @@ except importlib.metadata.PackageNotFoundError:
 del importlib
 
 __all__ = [
+    'BeerMcStasWorkflowPulseShaping',
     'BeerModMcStasWorkflow',
     'BeerModMcStasWorkflowKnownPeaks',
     '__version__',
