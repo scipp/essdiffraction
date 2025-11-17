@@ -34,6 +34,10 @@ _registry = make_registry(
         # to obtain the correct WavelengthDefinitionChopperDelay for these files.
         "silicon-mode10-new-model.h5": "md5:98500830f27700fc719634e1acd49944",
         "silicon-mode16-new-model.h5": "md5:393f9287e7d3f97ceedbe64343918413",
+        "silicon-mode3-new-model.h5": "md5:260fc811352b96c1dcdf431d91c11787",
+        "silicon-mode4-new-model.h5": "md5:625561f6a57c6e6892e1bbd4043d71ee",
+        "silicon-mode5-new-model.h5": "md5:315d457d136bb597d7f7ab596497324b",
+        "silicon-mode6-new-model.h5": "md5:be9b48ee9db9fcf1808ed2f2e35f594b",
         "silicon-mode7-new-model.h5": "md5:d2070d3132722bb551d99b243c62752f",
         "silicon-mode8-new-model.h5": "md5:d6dfdf7e87eccedf4f83c67ec552ca22",
         "silicon-mode9-new-model.h5": "md5:694a17fb616b7f1c20e94d9da113d201",
