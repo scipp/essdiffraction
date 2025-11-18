@@ -44,7 +44,7 @@ def _unique_child_group_h5(
     return out
 
 
-def _wavelength_estimate_from_mode(mode, value_in_file):
+def _center_wavelength_from_mode(mode, value_in_file):
     if value_in_file != '0':
         return sc.scalar(float(value_in_file), unit='angstrom')
     if mode in [
@@ -75,7 +75,7 @@ def _wavelength_estimate_from_mode(mode, value_in_file):
         raise ValueError(f'Unkonwn chopper mode {mode}.')
 
 
-def _chopper_position_from_mode(
+def _effective_chopper_position_from_mode(
     mode,
     *,
     psc1_pos,
@@ -153,12 +153,22 @@ def _load_beer_mcstas(f, bank=1):
         if k in ('mode', 'sample_filename', 'lambda'):
             da.coords[k] = sc.scalar(v)
 
-    da.coords['wavelength_estimate'] = _wavelength_estimate_from_mode(
+    da.coords['wavelength_estimate'] = _center_wavelength_from_mode(
         da.coords['mode'].value,
         da.coords.pop('lambda').value if 'lambda' in da.coords else '0',
     )
 
-    da.coords['chopper_position'] = _chopper_position_from_mode(
+    # Depending on the mode the effective chopper position is either the position
+    # of one chopper or the midpoint between two choppers.
+    # A neutron with "center wavelength" (called "lambda" in the McStas files)
+    # emitted from the middle of the pulse reaches the effective chopper position
+    # at the moment that is the center of the effective chopper opening window.
+    # That means we can use the effective chopper position and the center wavelength
+    # to obtain `t0`, the time when the neutron can be said to have passed the chopper.
+    #
+    # In real files we might not have this "lambda" parameter.
+    # But we will have chopper settings that can be used to get the same information.
+    da.coords['chopper_position'] = _effective_chopper_position_from_mode(
         da.coords['mode'].value,
         psc1_pos=psc1_pos[:],
         psc2_pos=psc2_pos[:],
@@ -296,5 +306,4 @@ def mcstas_modulation_period_from_mode(da: RawDetector[SampleRun]) -> Modulation
 mcstas_providers = (
     load_beer_mcstas_provider,
     mcstas_chopper_delay_from_mode,
-    mcstas_modulation_period_from_mode,
 )
