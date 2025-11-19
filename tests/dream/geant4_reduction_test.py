@@ -24,7 +24,6 @@ from ess.powder.types import (
     CalibrationFilename,
     CaveMonitorPosition,
     CIFAuthors,
-    CorrectedDetector,
     DspacingBins,
     DspacingDetector,
     EmptyCanRun,
@@ -251,7 +250,7 @@ def test_pipeline_wavelength_masking(workflow):
     wmax = sc.scalar(0.21, unit="angstrom")
     workflow[WavelengthMask] = lambda x: (x > wmin) & (x < wmax)
     workflow = powder.with_pixel_mask_filenames(workflow, [])
-    masked_sample = workflow.compute(CorrectedDetector[SampleRun])
+    masked_sample = workflow.compute(DspacingDetector[SampleRun])
     assert 'wavelength' in masked_sample.bins.masks
     sum_in_masked_region = (
         masked_sample.bin(wavelength=sc.concat([wmin, wmax], dim='wavelength'))
@@ -269,7 +268,7 @@ def test_pipeline_two_theta_masking(workflow):
     tmax = sc.scalar(1.2, unit="rad")
     workflow[TwoThetaMask] = lambda x: (x > tmin) & (x < tmax)
     workflow = powder.with_pixel_mask_filenames(workflow, [])
-    masked_sample = workflow.compute(CorrectedDetector[SampleRun])
+    masked_sample = workflow.compute(DspacingDetector[SampleRun])
     assert 'two_theta' in masked_sample.masks
     sum_in_masked_region = (
         masked_sample.bin(two_theta=sc.concat([tmin, tmax], dim='two_theta')).sum().data

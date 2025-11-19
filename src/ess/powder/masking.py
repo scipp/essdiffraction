@@ -39,7 +39,7 @@ def apply_masks(
     tof_mask_func: TofMask,
     wavelength_mask_func: WavelengthMask,
     two_theta_mask_func: TwoThetaMask,
-) -> CorrectedDetector[RunType]:
+) -> sc.DataArray:
     """ """
     out = data.copy(deep=False)
     if len(masked_pixel_ids) > 0:
@@ -71,7 +71,7 @@ def apply_masks(
     return CorrectedDetector[RunType](out)
 
 
-providers = (read_pixel_masks, apply_masks)
+providers = (read_pixel_masks,)
 
 
 def _merge(*dicts: dict) -> dict:

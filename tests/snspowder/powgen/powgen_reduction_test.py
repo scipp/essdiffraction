@@ -10,7 +10,6 @@ import ess.snspowder.powgen.data  # noqa: F401
 from ess import powder
 from ess.powder.types import (
     CalibrationFilename,
-    CorrectedDetector,
     DetectorBankSizes,
     DspacingBins,
     DspacingDetector,
@@ -139,7 +138,7 @@ def test_pipeline_wavelength_masking(providers, params):
     params[WavelengthMask] = lambda x: (x > wmin) & (x < wmax)
     pipeline = sciline.Pipeline(providers, params=params)
     pipeline = powder.with_pixel_mask_filenames(pipeline, [])
-    masked_sample = pipeline.compute(CorrectedDetector[SampleRun])
+    masked_sample = pipeline.compute(DspacingDetector[SampleRun])
     assert 'wavelength' in masked_sample.bins.masks
     sum_in_masked_region = (
         masked_sample.bin(wavelength=sc.concat([wmin, wmax], dim='wavelength'))
@@ -160,7 +159,7 @@ def test_pipeline_two_theta_masking(providers, params):
     params[TwoThetaMask] = lambda x: (x > tmin) & (x < tmax)
     pipeline = sciline.Pipeline(providers, params=params)
     pipeline = powder.with_pixel_mask_filenames(pipeline, [])
-    masked_sample = pipeline.compute(CorrectedDetector[SampleRun])
+    masked_sample = pipeline.compute(DspacingDetector[SampleRun])
     assert 'two_theta' in masked_sample.masks
     sum_in_masked_region = (
         masked_sample.flatten(to='pixel')
