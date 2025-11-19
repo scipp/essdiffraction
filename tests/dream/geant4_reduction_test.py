@@ -24,8 +24,8 @@ from ess.powder.types import (
     CalibrationFilename,
     CaveMonitorPosition,
     CIFAuthors,
+    CorrectedDetector,
     DspacingBins,
-    DspacingDetector,
     EmptyCanRun,
     EmptyCanSubtractedIofDspacing,
     Filename,
@@ -221,8 +221,8 @@ def test_workflow_is_deterministic(workflow):
 
 def test_pipeline_can_compute_intermediate_results(workflow):
     workflow = powder.with_pixel_mask_filenames(workflow, [])
-    results = workflow.compute((DspacingDetector[SampleRun], NeXusDetectorName))
-    result = results[DspacingDetector[SampleRun]]
+    results = workflow.compute((CorrectedDetector[SampleRun], NeXusDetectorName))
+    result = results[CorrectedDetector[SampleRun]]
 
     detector_name = results[NeXusDetectorName]
     expected_dims = {'segment', 'wire', 'counter', 'strip', 'module'}
@@ -250,7 +250,7 @@ def test_pipeline_wavelength_masking(workflow):
     wmax = sc.scalar(0.21, unit="angstrom")
     workflow[WavelengthMask] = lambda x: (x > wmin) & (x < wmax)
     workflow = powder.with_pixel_mask_filenames(workflow, [])
-    masked_sample = workflow.compute(DspacingDetector[SampleRun])
+    masked_sample = workflow.compute(CorrectedDetector[SampleRun])
     assert 'wavelength' in masked_sample.bins.masks
     sum_in_masked_region = (
         masked_sample.bin(wavelength=sc.concat([wmin, wmax], dim='wavelength'))
@@ -268,7 +268,7 @@ def test_pipeline_two_theta_masking(workflow):
     tmax = sc.scalar(1.2, unit="rad")
     workflow[TwoThetaMask] = lambda x: (x > tmin) & (x < tmax)
     workflow = powder.with_pixel_mask_filenames(workflow, [])
-    masked_sample = workflow.compute(DspacingDetector[SampleRun])
+    masked_sample = workflow.compute(CorrectedDetector[SampleRun])
     assert 'two_theta' in masked_sample.masks
     sum_in_masked_region = (
         masked_sample.bin(two_theta=sc.concat([tmin, tmax], dim='two_theta')).sum().data
@@ -348,6 +348,6 @@ def test_dream_workflow_registers_subclasses():
 
 def test_dream_workflow_parameters_returns_filtered_params():
     wf = DreamGeant4ProtonChargeWorkflow()
-    parameters = reduce_workflow.get_parameters(wf, (DspacingDetector[SampleRun],))
+    parameters = reduce_workflow.get_parameters(wf, (CorrectedDetector[SampleRun],))
     assert Filename[SampleRun] in parameters
     assert Filename[EmptyCanRun] not in parameters
