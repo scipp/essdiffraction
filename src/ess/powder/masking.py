@@ -11,7 +11,6 @@ import sciline
 import scipp as sc
 
 from .types import (
-    CorrectedDetector,
     MaskedDetectorIDs,
     PixelMaskFilename,
     RunType,
@@ -68,7 +67,7 @@ def apply_masks(
                 )
                 out.masks[dim] = mask(coord)
 
-    return CorrectedDetector[RunType](out)
+    return out
 
 
 providers = (read_pixel_masks,)

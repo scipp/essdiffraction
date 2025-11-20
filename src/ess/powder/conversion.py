@@ -232,7 +232,7 @@ def convert_to_dspacing(
     data: WavelengthDetector[RunType],
     graph: ElasticCoordTransformGraph[RunType],
     calibration: CalibrationData,
-) -> CorrectedDetector[RunType]:
+) -> sc.DataArray | sc.Dataset:
     if calibration is None:
         out = data.transform_coords(["dspacing"], graph=graph, keep_intermediate=False)
     else:
@@ -240,7 +240,7 @@ def convert_to_dspacing(
         for key in ("wavelength", "two_theta"):
             if key in out.coords.keys():
                 out.coords.set_aligned(key, False)
-    return CorrectedDetector[RunType](out)
+    return out
 
 
 def _convert_reduced_to_tof_impl(
