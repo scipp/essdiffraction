@@ -229,7 +229,7 @@ def add_scattering_coordinates_from_positions(
 
 
 def convert_to_dspacing(
-    data: WavelengthDetector[RunType],
+    data: sc.DataArray,
     graph: ElasticCoordTransformGraph[RunType],
     calibration: CalibrationData,
 ) -> sc.DataArray | sc.Dataset:
