@@ -283,7 +283,6 @@ def convert_monitor_to_wavelength(
 providers = (
     powder_coordinate_transformation_graph,
     add_scattering_coordinates_from_positions,
-    convert_to_dspacing,
     convert_reduced_to_tof,
     convert_reduced_to_empty_can_subtracted_tof,
     convert_monitor_to_wavelength,
