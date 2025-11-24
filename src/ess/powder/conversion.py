@@ -232,7 +232,7 @@ def convert_to_dspacing(
     data: WavelengthDetector[RunType],
     graph: ElasticCoordTransformGraph[RunType],
     calibration: CalibrationData,
-) -> sc.DataArray | sc.Dataset:
+) -> sc.DataArray:
     if calibration is None:
         out = data.transform_coords(["dspacing"], graph=graph, keep_intermediate=False)
     else:
