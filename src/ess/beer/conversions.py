@@ -92,13 +92,9 @@ def _compute_d(
     sinth = sc.sin(theta)
     t = time_of_arrival
 
-    # d = time_of_arrival.copy().to(dtype='float64')
-    # d.unit = dhkl_list[0].unit
-    # d[...] = sc.scalar(float('nan'), unit=d.unit)
     d = sc.full_like(
         time_of_arrival, value=float('nan'), unit=dhkl_list[0].unit, dtype='float64'
     )
-
     dtfound = sc.full_like(time_of_arrival, value=float('nan'), dtype='float64')
 
     const = (2 * sinth * L0 / (scipp.constants.h / scipp.constants.m_n)).to(
