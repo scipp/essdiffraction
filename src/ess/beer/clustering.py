@@ -12,20 +12,25 @@ def cluster_events_by_streak(da: RawDetector[RunType]) -> StreakClusteredData[Ru
     da = da.copy(deep=False)
 
     t = time_of_arrival(
-        da.coords['event_time_offset'],
-        da.coords['tc'].to(unit=da.coords['event_time_offset'].unit),
+        da.bins.coords['event_time_offset'],
+        da.coords['tc'].to(unit=da.bins.coords['event_time_offset'].unit),
     )
     approximate_t0 = t0_estimate(
         da.coords['wavelength_estimate'], da.coords['L0'], da.coords['Ltotal']
     ).to(unit=t.unit)
 
-    da.coords['coarse_d'] = dspacing_from_tof(
+    da.bins.coords['coarse_d'] = dspacing_from_tof(
         tof=t - approximate_t0,
         Ltotal=da.coords['Ltotal'],
         two_theta=da.coords['two_theta'],
     ).to(unit='angstrom')
 
-    h = da.hist(coarse_d=1000)
+    # We need to keep these coordinates after binning,
+    # adding them to the binned data coords achieves this.
+    for coord in ('two_theta', 'Ltotal'):
+        da.bins.coords[coord] = sc.bins_like(da, da.coords[coord])
+
+    h = da.bins.concat().hist(coarse_d=1000)
     i_peaks, _ = find_peaks(
         h.data.values, height=medfilt(h.values, kernel_size=99), distance=3
     )
@@ -52,8 +57,10 @@ def cluster_events_by_streak(da: RawDetector[RunType]) -> StreakClusteredData[Ru
         )
     ]
     has_peak = peaks.bin(coarse_d=filtered_valleys).bins.size().data
-    b = da.bin(coarse_d=filtered_valleys).assign_masks(
-        no_peak=has_peak != sc.scalar(1, unit=None)
+    b = (
+        da.bins.concat()
+        .bin(coarse_d=filtered_valleys)
+        .assign_masks(no_peak=has_peak != sc.scalar(1, unit=None))
     )
     b = b.drop_coords(('coarse_d',))
     b = b.bins.drop_coords(('coarse_d',))

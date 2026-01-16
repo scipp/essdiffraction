@@ -183,28 +183,38 @@ def _load_beer_mcstas(f, bank=1):
         list(map(float, da.coords.pop('position').value.split(' '))), unit='m'
     )
 
+    da.coords.pop('n')
     da.coords['x'].unit = 'm'
     da.coords['y'].unit = 'm'
     da.coords['t'].unit = 's'
 
-    z = sc.norm(da.coords['detector_position'] - da.coords['sample_position'])
+    da = da.bin(
+        y=sc.linspace('y', -0.5, 0.5, 500, unit='m'),
+        x=sc.linspace('x', -0.5, 0.5, 500, unit='m'),
+    )
+    da.coords['position'] = (
+        da.coords['detector_position']
+        + sc.spatial.as_vectors(
+            sc.scalar(0.0, unit='m'),
+            sc.midpoints(da.coords['y']),
+            sc.midpoints(-da.coords['x'] if bank == 1 else da.coords['x']),
+        )
+    ).transpose(da.dims)
+
     L1 = sc.norm(da.coords['sample_position'] - da.coords['chopper_position'])
-    L2 = sc.sqrt(da.coords['x'] ** 2 + da.coords['y'] ** 2 + z**2)
+    L2 = sc.norm(da.coords['position'] - da.coords['sample_position'])
 
     # Source is assumed to be at the origin
     da.coords['L0'] = L1 + L2 + sc.norm(da.coords['chopper_position'])
     da.coords['Ltotal'] = L1 + L2
     da.coords['two_theta'] = sc.acos(
-        (-da.coords['x'] if bank == 1 else da.coords['x']) / L2
+        (da.coords['position'] - da.coords['sample_position']).fields.z / L2
     )
 
-    # Save some space
-    da.coords.pop('x')
-    da.coords.pop('y')
-    da.coords.pop('n')
-
-    t = da.coords.pop('t')
-    da.coords['event_time_offset'] = t % sc.scalar(1 / 14, unit='s').to(unit=t.unit)
+    t = da.bins.coords['t']
+    da.bins.coords['event_time_offset'] = t % sc.scalar(1 / 14, unit='s').to(
+        unit=t.unit
+    )
     da.coords["tc"] = (
         sc.constants.m_n
         / sc.constants.h

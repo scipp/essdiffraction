@@ -92,10 +92,14 @@ def _compute_d(
     sinth = sc.sin(theta)
     t = time_of_arrival
 
-    d = sc.empty(dims=sinth.dims, shape=sinth.shape, unit=dhkl_list[0].unit)
-    d[:] = sc.scalar(float('nan'), unit=dhkl_list[0].unit)
-    dtfound = sc.empty(dims=sinth.dims, shape=sinth.shape, dtype='float64', unit=t.unit)
-    dtfound[:] = sc.scalar(float('nan'), unit=t.unit)
+    # d = time_of_arrival.copy().to(dtype='float64')
+    # d.unit = dhkl_list[0].unit
+    # d[...] = sc.scalar(float('nan'), unit=d.unit)
+    d = sc.full_like(
+        time_of_arrival, value=float('nan'), unit=dhkl_list[0].unit, dtype='float64'
+    )
+
+    dtfound = sc.full_like(time_of_arrival, value=float('nan'), dtype='float64')
 
     const = (2 * sinth * L0 / (scipp.constants.h / scipp.constants.m_n)).to(
         unit=f'{time_of_arrival.unit}/angstrom'
@@ -145,9 +149,8 @@ def _tof_from_dhkl(
     c = (-2 * 1.0 / (scipp.constants.h / scipp.constants.m_n)).to(
         unit=f'{time_of_arrival.unit}/m/angstrom'
     )
-    out = sc.sin(theta)
-    out *= c
-    out *= coarse_dhkl
+    out = c * coarse_dhkl
+    out *= sc.sin(theta)
     out *= Ltotal
     out += time_of_arrival
     out -= time0
