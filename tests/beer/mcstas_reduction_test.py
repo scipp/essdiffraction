@@ -22,7 +22,7 @@ def test_can_reduce_using_known_peaks_workflow():
     assert 'bank1' in da
     assert 'bank2' in da
     da = da['bank1']
-    assert 'tof' in da.coords
+    assert 'tof' in da.bins.coords
     # assert dataarray has all coords required to compute dspacing
     da = da.transform_coords(
         ('dspacing',),
@@ -64,7 +64,7 @@ def test_pulse_shaping_workflow():
     assert 'bank1' in da
     assert 'bank2' in da
     da = da['bank1']
-    assert 'tof' in da.coords
+    assert 'tof' in da.bins.coords
     # assert dataarray has all coords required to compute dspacing
     da = da.transform_coords(
         ('dspacing',),
