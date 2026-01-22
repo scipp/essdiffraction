@@ -3,11 +3,14 @@
 from pathlib import Path
 
 import h5py
+import numpy as np
 import scipp as sc
 import scipp.constants
 
 from .types import (
+    DetectorBank,
     Filename,
+    GeometryCoordTransformGraph,
     ModulationPeriod,
     RawDetector,
     SampleRun,
@@ -119,6 +122,9 @@ def _load_beer_mcstas(f, bank=1):
         mca_pos,
         mcb_pos,
         mcc_pos,
+        source_rotation,
+        bank1_rotation,
+        bank2_rotation,
     ) = _load_h5(
         f,
         f'NXentry/NXdetector/bank{bank:02}_events_dat_list_p_x_y_n_id_t',
@@ -131,6 +137,9 @@ def _load_beer_mcstas(f, bank=1):
         positions['MCA'],
         positions['MCB'],
         positions['MCC'],
+        '/entry1/instrument/components/0173_sourceMantid/Rotation',
+        '/entry1/instrument/components/0199_nD_Mantid1/Rotation',
+        '/entry1/instrument/components/0200_nD_Mantid2/Rotation',
     )
 
     events = events[()]
@@ -188,33 +197,84 @@ def _load_beer_mcstas(f, bank=1):
     da.coords['y'].unit = 'm'
     da.coords['t'].unit = 's'
 
+    # Bin detector panel into rectangular "pixels"
+    # similar in size to the physical detector pixels.
     da = da.bin(
-        y=sc.linspace('y', -0.5, 0.5, 500, unit='m'),
-        x=sc.linspace('x', -0.5, 0.5, 500, unit='m'),
+        y=sc.linspace('y', -0.5, 0.5, 501, unit='m'),
+        x=sc.linspace('x', -0.5, 0.5, 201, unit='m'),
+    )
+
+    # Compute the position of each pixel in the global coordinate system.
+    # The detector local coordinate system is rotatated by the detector rotation,
+    # and translated to the location of the detector in the global coordinate system.
+    detector_rotation_angle = np.acos(
+        bank1_rotation[0, 0] if bank == 1 else bank2_rotation[0, 0]
     )
     da.coords['position'] = (
         da.coords['detector_position']
-        + sc.spatial.as_vectors(
-            sc.scalar(0.0, unit='m'),
-            sc.midpoints(da.coords['y']),
-            sc.midpoints(-da.coords['x'] if bank == 1 else da.coords['x']),
+        + (
+            sc.spatial.rotation(
+                value=[
+                    0.0,
+                    np.sin(detector_rotation_angle / 2),
+                    0.0,
+                    np.cos(detector_rotation_angle / 2),
+                ]
+            )
+            if bank == 1
+            else sc.spatial.rotation(
+                value=[
+                    0.0,
+                    np.sin(-detector_rotation_angle / 2),
+                    0.0,
+                    np.cos(-detector_rotation_angle / 2),
+                ]
+            )
         )
+        * sc.spatial.as_vectors(
+            sc.midpoints(da.coords['x']),
+            sc.midpoints(da.coords['y']),
+            sc.scalar(0.0, unit='m'),
+        )
+        # We need the dimension order of the positions to be the same
+        # as the dimension order of the binned data array.
     ).transpose(da.dims)
 
     L1 = sc.norm(da.coords['sample_position'] - da.coords['chopper_position'])
     L2 = sc.norm(da.coords['position'] - da.coords['sample_position'])
 
-    # Source is assumed to be at the origin
-    da.coords['L0'] = L1 + L2 + sc.norm(da.coords['chopper_position'])
-    da.coords['Ltotal'] = L1 + L2
-    da.coords['two_theta'] = sc.acos(
-        (da.coords['position'] - da.coords['sample_position']).fields.z / L2
+    # Define the incident beam by rotating the z-axis by
+    # the rotation of the "source" in McStas.
+    beam_rotation_angle = np.acos(source_rotation[0, 0])
+    incident_beam = L1 * (
+        sc.spatial.rotation(
+            value=[
+                0.0,
+                np.sin(beam_rotation_angle / 2),
+                0.0,
+                np.cos(beam_rotation_angle / 2),
+            ]
+        )
+        * sc.vector([0, 0, 1.0])
     )
+    # Create a source position that gives us the incident beam
+    # direction and length that we want.
+    # In practice this should be hardcoded or determined from
+    # some entry in the Nexus file.
+    da.coords['source_position'] = da.coords['sample_position'] - incident_beam
+
+    # L0 is the total length of the instrument
+    da.coords['L0'] = L1 + L2 + sc.norm(da.coords['chopper_position'])
 
     t = da.bins.coords['t']
     da.bins.coords['event_time_offset'] = t % sc.scalar(1 / 14, unit='s').to(
         unit=t.unit
     )
+    # Estimate of the time the neutron passed the virtual source chopper.
+    # Used in pulse shaping mode to determine the wavelength.
+    # Used in modulation mode automatic-peak-finding reduction to estimate d.
+    # In practice this will probably be replaced by the regular tof workflow.
+    # But I'm not 100% sure.
     da.coords["tc"] = (
         sc.constants.m_n
         / sc.constants.h
@@ -222,48 +282,39 @@ def _load_beer_mcstas(f, bank=1):
         * da.coords['L0'].min().to(unit='angstrom')
     ).to(unit='s') - sc.scalar(1 / 14, unit='s') / 2
 
+    del da.coords['x']
+    del da.coords['y']
+    # The binned x, y, t coordinates are kept because they can be useful.
     return da
-
-
-def load_beer_mcstas(f: str | Path | h5py.File) -> sc.DataGroup:
-    '''Load beer McStas data from a file to a
-    data group with one data array for each bank.
-    '''
-    if isinstance(f, str | Path):
-        with h5py.File(f) as ff:
-            return load_beer_mcstas(ff)
-
-    return sc.DataGroup(
-        {
-            'bank1': _load_beer_mcstas(f, bank=1),
-            'bank2': _load_beer_mcstas(f, bank=2),
-        }
-    )
 
 
 def _not_between(x, a, b):
     return (x < a) | (b < x)
 
 
+def load_beer_mcstas(f: str | Path | h5py.File, bank: int) -> sc.DataArray:
+    '''Load beer McStas data from a file to a
+    data group with one data array for each bank.
+    '''
+    if isinstance(f, str | Path):
+        with h5py.File(f) as ff:
+            return load_beer_mcstas(ff, bank=bank)
+
+    return _load_beer_mcstas(f, bank=bank)
+
+
 def load_beer_mcstas_provider(
-    fname: Filename[SampleRun], two_theta_limits: TwoThetaLimits
+    fname: Filename[SampleRun],
+    bank: DetectorBank,
+    two_theta_limits: TwoThetaLimits,
+    graph: GeometryCoordTransformGraph,
 ) -> RawDetector[SampleRun]:
-    da = load_beer_mcstas(fname)
-    da = (
-        sc.DataGroup(
-            {
-                k: v.assign_masks(
-                    two_theta=_not_between(v.coords['two_theta'], *two_theta_limits)
-                )
-                for k, v in da.items()
-            }
-        )
-        if isinstance(da, sc.DataGroup)
-        else da.assign_masks(
-            two_theta=_not_between(da.coords['two_theta'], *two_theta_limits)
-        )
+    da = load_beer_mcstas(fname, bank)
+    da = da.transform_coords(['two_theta'], graph=graph)
+    da = da.assign_masks(
+        two_theta=_not_between(da.coords['two_theta'], *two_theta_limits)
     )
-    return RawDetector[SampleRun](da)
+    return da
 
 
 def mcstas_chopper_delay_from_mode(
@@ -273,7 +324,7 @@ def mcstas_chopper_delay_from_mode(
     use in the docs currently.
     Eventually we will want to determine this from the chopper information
     in the files, but that information is not in the simulation output.'''
-    mode = next(iter(d.coords['mode'] for d in da.values())).value
+    mode = da.coords['mode'].value
     if mode in ('7', '8', '9', '10'):
         return sc.scalar(0.0024730158730158727, unit='s')
     if mode == '16':
@@ -286,7 +337,7 @@ def mcstas_chopper_delay_from_mode_new_simulations(
 ) -> WavelengthDefinitionChopperDelay:
     '''Celine has a new simulation with some changes to the chopper placement(?).
     For those simulations we need to adapt the chopper delay values.'''
-    mode = next(iter(d.coords['mode'] for d in da.values())).value
+    mode = da.coords['mode'].value
     if mode == '7':
         return sc.scalar(0.001370158730158727, unit='s')
     if mode == '8':
@@ -301,7 +352,7 @@ def mcstas_chopper_delay_from_mode_new_simulations(
 
 
 def mcstas_modulation_period_from_mode(da: RawDetector[SampleRun]) -> ModulationPeriod:
-    mode = next(iter(d.coords['mode'] for d in da.values())).value
+    mode = da.coords['mode'].value
     if mode in ('7', '8'):
         return sc.scalar(1.0 / (8 * 70), unit='s')
     if mode == '9':
