@@ -290,7 +290,8 @@ def _load_beer_mcstas(f, bank=1):
 
     del da.coords['x']
     del da.coords['y']
-    # The binned x, y, t coordinates are kept because they can be useful.
+    # The binned t coordinate is kept because it can be useful
+    # to understand resolution and to debug tof estimation.
     return da
 
 
