@@ -19,6 +19,14 @@ from .types import (
 )
 
 
+def _find_h5(group: h5py.Group, matches):
+    for p in group.keys():
+        if matches in p:
+            return group[p]
+    else:
+        raise RuntimeError(f'Could not find "{matches}" in {group}.')
+
+
 def _load_h5(group: h5py.Group | str, *paths: str):
     if isinstance(group, str):
         with h5py.File(group) as group:
@@ -122,9 +130,6 @@ def _load_beer_mcstas(f, bank=1):
         mca_pos,
         mcb_pos,
         mcc_pos,
-        source_rotation,
-        bank1_rotation,
-        bank2_rotation,
     ) = _load_h5(
         f,
         f'NXentry/NXdetector/bank{bank:02}_events_dat_list_p_x_y_n_id_t',
@@ -137,10 +142,13 @@ def _load_beer_mcstas(f, bank=1):
         positions['MCA'],
         positions['MCB'],
         positions['MCC'],
-        '/entry1/instrument/components/0173_sourceMantid/Rotation',
-        '/entry1/instrument/components/0199_nD_Mantid1/Rotation',
-        '/entry1/instrument/components/0200_nD_Mantid2/Rotation',
     )
+    source_rotation = _find_h5(f['/entry1/instrument/components'], 'sourceMantid')[
+        'Rotation'
+    ]
+    detector_rotation = _find_h5(f['/entry1/instrument/components'], 'nD_Mantid')[
+        'Rotation'
+    ]
 
     events = events[()]
     da = sc.DataArray(
@@ -207,9 +215,7 @@ def _load_beer_mcstas(f, bank=1):
     # Compute the position of each pixel in the global coordinate system.
     # The detector local coordinate system is rotatated by the detector rotation,
     # and translated to the location of the detector in the global coordinate system.
-    detector_rotation_angle = np.acos(
-        bank1_rotation[0, 0] if bank == 1 else bank2_rotation[0, 0]
-    )
+    detector_rotation_angle = np.acos(detector_rotation[0, 0])
     da.coords['position'] = (
         da.coords['detector_position']
         + (
