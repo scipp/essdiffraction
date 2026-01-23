@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright (c) 2025 Scipp contributors (https://github.com/scipp)
+import re
 from pathlib import Path
 
 import h5py
@@ -19,9 +20,23 @@ from .types import (
 )
 
 
+def _rotation_from_y_rotation_matrix(rot):
+    '''Assuming the rotation is around the y-axis
+    this function creates a rotation operator from the rotation matrix.'''
+    angle = np.atan2(rot[2, 0], rot[0, 0])
+    return sc.spatial.rotation(
+        value=[
+            0.0,
+            np.sin(angle / 2),
+            0.0,
+            np.cos(angle / 2),
+        ]
+    )
+
+
 def _find_h5(group: h5py.Group, matches):
     for p in group.keys():
-        if matches in p:
+        if re.match(matches, p):
             return group[p]
     else:
         raise RuntimeError(f'Could not find "{matches}" in {group}.')
@@ -143,12 +158,12 @@ def _load_beer_mcstas(f, bank=1):
         positions['MCB'],
         positions['MCC'],
     )
-    source_rotation = _find_h5(f['/entry1/instrument/components'], 'sourceMantid')[
+    beam_rotation = _find_h5(f['/entry1/instrument/components'], '.*sourceMantid.*')[
         'Rotation'
     ]
-    detector_rotation = _find_h5(f['/entry1/instrument/components'], 'nD_Mantid')[
-        'Rotation'
-    ]
+    detector_rotation = _find_h5(
+        f['/entry1/instrument/components'], f'.*nD_Mantid_?{bank}.*'
+    )['Rotation']
 
     events = events[()]
     da = sc.DataArray(
@@ -215,28 +230,9 @@ def _load_beer_mcstas(f, bank=1):
     # Compute the position of each pixel in the global coordinate system.
     # The detector local coordinate system is rotatated by the detector rotation,
     # and translated to the location of the detector in the global coordinate system.
-    detector_rotation_angle = np.acos(detector_rotation[0, 0])
     da.coords['position'] = (
         da.coords['detector_position']
-        + (
-            sc.spatial.rotation(
-                value=[
-                    0.0,
-                    np.sin(detector_rotation_angle / 2),
-                    0.0,
-                    np.cos(detector_rotation_angle / 2),
-                ]
-            )
-            if bank == 1
-            else sc.spatial.rotation(
-                value=[
-                    0.0,
-                    np.sin(-detector_rotation_angle / 2),
-                    0.0,
-                    np.cos(-detector_rotation_angle / 2),
-                ]
-            )
-        )
+        + _rotation_from_y_rotation_matrix(detector_rotation)
         * sc.spatial.as_vectors(
             sc.midpoints(da.coords['x']),
             sc.midpoints(da.coords['y']),
@@ -251,17 +247,8 @@ def _load_beer_mcstas(f, bank=1):
 
     # Define the incident beam by rotating the z-axis by
     # the rotation of the "source" in McStas.
-    beam_rotation_angle = np.acos(source_rotation[0, 0])
     incident_beam = L1 * (
-        sc.spatial.rotation(
-            value=[
-                0.0,
-                np.sin(beam_rotation_angle / 2),
-                0.0,
-                np.cos(beam_rotation_angle / 2),
-            ]
-        )
-        * sc.vector([0, 0, 1.0])
+        _rotation_from_y_rotation_matrix(beam_rotation) * sc.vector([0, 0, 1.0])
     )
     # Create a source position that gives us the incident beam
     # direction and length that we want.
