@@ -23,7 +23,9 @@ from .types import (
 def _rotation_from_y_rotation_matrix(rot):
     '''Assuming the rotation is around the y-axis
     this function creates a rotation operator from the rotation matrix.'''
-    angle = np.atan2(rot[2, 0], rot[0, 0])
+    # Numpy backwards compatibility.
+    atan2 = np.atan2 if hasattr(np, 'atan2') else np.arctan2
+    angle = atan2(rot[2, 0], rot[0, 0])
     return sc.spatial.rotation(
         value=[
             0.0,
