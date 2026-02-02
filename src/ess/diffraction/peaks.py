@@ -33,7 +33,7 @@ def dspacing_peaks_from_cif(cif, intensity_threshold=None, **kwargs) -> sc.DataA
 
     Returns
     ------------
-        Data array represengint peak amplitudes and peak positions in ``dspacing``.
+        Data array representing peak amplitudes and peak positions in ``dspacing``.
         The full NCrystal information object is added as a coordinate with the name ``info``.
         The input arguments are added as scalar coordinates.
 
