@@ -37,7 +37,6 @@ def dspacing_peaks_from_cif(cif, intensity_threshold=None, **kwargs) -> sc.DataA
         The full NCrystal information object is added as a coordinate with the name ``info``.
         The input arguments are added as scalar coordinates.
 
-
     Examples
     --------
     >>> from ess.diffraction.peaks import dspacing_peaks_from_cif
