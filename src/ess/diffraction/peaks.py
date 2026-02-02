@@ -39,19 +39,24 @@ def dspacing_peaks_from_cif(cif, intensity_threshold=None, **kwargs) -> sc.DataA
 
 
     Examples
-    ------------
-        >>> from ess.diffraction.peaks import dspacing_peaks_from_cif
-        >>> dspacing_peaks_from_cif('codid::9008460', uiso_temperature=400, override_spacegroup='F d -3 m:1')
-        <scipp.DataArray>
-        Dimensions: Sizes[peaks:162, ]
-        Coordinates:
-        * cif                        string        <no unit>  ()  "codid::9008460"
-        * dspacing                  float64             [Å]  (peaks)  [2.33803, 2.02479, ..., 0.243756, 0.243756]
-        * info                     PyObject        <no unit>  ()  <NCrystal.core.Info object at 0x7398dac03bd0>
-        * override_spacegroup        string        <no unit>  ()  "F d -3 m:1"
-        * uiso_temperature            int64  [dimensionless]  ()  400
-        Data:
-                                    float64           [barn]  (peaks)  [13.3631, 9.59562, ..., 0.000556426, 0.000556426]
+    --------
+    >>> from ess.diffraction.peaks import dspacing_peaks_from_cif
+    >>> dspacing_peaks_from_cif(
+    ...     'codid::9008460',
+    ...     uiso_temperature=400,
+    ...     override_spacegroup='F d -3 m:1',
+    ... )
+    <scipp.DataArray>
+    Dimensions: Sizes[peaks:162, ]
+    Coordinates:
+    * cif                        string        <no unit>  ()  "codid::9008460"
+    * dspacing                  float64             [Å]  (peaks)  [2.33803, 2.02479, ..., 0.243756, 0.243756]
+    * info                     PyObject        <no unit>  ()  <NCrystal.core.Info object at ...>
+    * override_spacegroup        string        <no unit>  ()  "F d -3 m:1"
+    * uiso_temperature            int64  [dimensionless]  ()  400
+    Data:
+                                float64           [barn]  (peaks)  [13.3631, 9.59562, ..., 0.000556426, 0.000556426]
+
     """  # noqa: E501
     info = NC.NCMATComposer.from_cif(cif, **kwargs).load('comp=bragg').info
     min_intensity = (
