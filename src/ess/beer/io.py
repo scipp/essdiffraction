@@ -2,7 +2,6 @@
 # Copyright (c) 2025 Scipp contributors (https://github.com/scipp)
 import re
 from pathlib import Path
-from typing import Literal
 
 import h5py
 import numpy as np
@@ -40,7 +39,7 @@ def _find_h5(group: h5py.Group, matches):
         if re.match(matches, p):
             return group[p]
     else:
-        raise RuntimeError(f'Could not find "{matches}" in {group}.')
+        raise ValueError(f'Could not find "{matches}" in {group}.')
 
 
 def _load_h5(group: h5py.Group | str, *paths: str):
@@ -298,25 +297,35 @@ def _not_between(x, a, b):
     return (x < a) | (b < x)
 
 
-def load_beer_mcstas(
-    f: str | Path | h5py.File, bank: Literal['north', 'south'] | int
-) -> sc.DataArray:
+def load_beer_mcstas(f: str | Path | h5py.File, bank: DetectorBank) -> sc.DataArray:
     '''Load beer McStas data from a file to a
     data group with one data array for each bank.
     '''
+    if not isinstance(bank, DetectorBank):
+        raise ValueError(
+            '"bank" must be either ``DetectorBank.north`` or ``DetectorBank.south``'
+        )
+
     if isinstance(f, str | Path):
         with h5py.File(f) as ff:
             return load_beer_mcstas(ff, bank=bank)
 
-    if bank in {'north', 'south'}:
-        return sc.concat(
-            [
-                _load_beer_mcstas(f, north_or_south=bank, number=number)
-                for number in range(1, 13)
-            ],
-            dim='panel',
+    try:
+        _find_h5(f['/entry1/instrument/components'], '.*nD_Mantid_?south_1.*')
+    except ValueError:
+        # The file did not have a detector named 'south'-something.
+        # Load old 2D structure where banks were not named 'north' and 'south'.
+        return _load_beer_mcstas(
+            f, north_or_south=None, number=1 if bank == DetectorBank.south else 2
         )
-    return _load_beer_mcstas(f, north_or_south=None, number=bank)
+
+    return sc.concat(
+        [
+            _load_beer_mcstas(f, north_or_south=bank.name, number=number)
+            for number in range(1, 13)
+        ],
+        dim='panel',
+    )
 
 
 def load_beer_mcstas_monitor(f: str | Path | h5py.File):

@@ -23,7 +23,7 @@ from ess.reduce.time_of_flight.types import TofDetector
 def test_can_reduce_using_known_peaks_workflow():
     wf = BeerModMcStasWorkflowKnownPeaks()
     wf[DHKLList] = duplex_peaks_array()
-    wf[DetectorBank] = 1
+    wf[DetectorBank] = DetectorBank.north
     wf[Filename[SampleRun]] = mcstas_duplex(7)
     da = wf.compute(TofDetector[SampleRun])
     assert 'tof' in da.bins.coords
@@ -44,7 +44,7 @@ def test_can_reduce_using_known_peaks_workflow():
 def test_can_reduce_using_unknown_peaks_workflow():
     wf = BeerModMcStasWorkflow()
     wf[Filename[SampleRun]] = mcstas_duplex(7)
-    wf[DetectorBank] = 1
+    wf[DetectorBank] = DetectorBank.north
     da = wf.compute(TofDetector[SampleRun])
     da = da.transform_coords(
         ('dspacing',),
@@ -62,7 +62,7 @@ def test_can_reduce_using_unknown_peaks_workflow():
 def test_pulse_shaping_workflow():
     wf = BeerMcStasWorkflowPulseShaping()
     wf[Filename[SampleRun]] = mcstas_silicon_new_model(6)
-    wf[DetectorBank] = 1
+    wf[DetectorBank] = DetectorBank.north
     da = wf.compute(TofDetector[SampleRun])
     assert 'tof' in da.bins.coords
     # assert dataarray has all coords required to compute dspacing
@@ -80,8 +80,8 @@ def test_pulse_shaping_workflow():
 
 
 def test_can_load_3d_detector():
-    load_beer_mcstas(mcstas_few_neutrons_3d_detector_example(), 'north')
-    da = load_beer_mcstas(mcstas_few_neutrons_3d_detector_example(), 'south')
+    load_beer_mcstas(mcstas_few_neutrons_3d_detector_example(), DetectorBank.north)
+    da = load_beer_mcstas(mcstas_few_neutrons_3d_detector_example(), DetectorBank.south)
     assert 'panel' in da.dims
 
 
