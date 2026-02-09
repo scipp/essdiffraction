@@ -8,7 +8,13 @@ from ess.beer import (
     BeerModMcStasWorkflow,
     BeerModMcStasWorkflowKnownPeaks,
 )
-from ess.beer.data import duplex_peaks_array, mcstas_duplex, mcstas_silicon_new_model
+from ess.beer.data import (
+    duplex_peaks_array,
+    mcstas_duplex,
+    mcstas_few_neutrons_3d_detector_example,
+    mcstas_silicon_new_model,
+)
+from ess.beer.io import load_beer_mcstas
 from ess.beer.types import DetectorBank, DHKLList
 from ess.reduce.nexus.types import Filename, SampleRun
 from ess.reduce.time_of_flight.types import TofDetector
@@ -71,3 +77,9 @@ def test_pulse_shaping_workflow():
         sc.scalar(1.6374, unit='angstrom'),
         atol=sc.scalar(1e-2, unit='angstrom'),
     )
+
+
+def test_can_load_3d_detector():
+    load_beer_mcstas(mcstas_few_neutrons_3d_detector_example(), 'north')
+    da = load_beer_mcstas(mcstas_few_neutrons_3d_detector_example(), 'south')
+    assert 'panel' in da.dims

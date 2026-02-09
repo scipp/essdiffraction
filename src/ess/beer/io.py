@@ -2,6 +2,7 @@
 # Copyright (c) 2025 Scipp contributors (https://github.com/scipp)
 import re
 from pathlib import Path
+from typing import Literal
 
 import h5py
 import numpy as np
@@ -127,7 +128,7 @@ def _effective_chopper_position_from_mode(
         raise ValueError(f'Unkonwn chopper mode {mode}.')
 
 
-def _load_beer_mcstas(f, bank=1):
+def _load_beer_mcstas(f, north_or_south=None, *, number):
     positions = {
         name: f'/entry1/instrument/components/{key}/Position'
         for key in f['/entry1/instrument/components']
@@ -147,8 +148,16 @@ def _load_beer_mcstas(f, bank=1):
         mcc_pos,
     ) = _load_h5(
         f,
-        f'NXentry/NXdetector/bank{bank:02}_events_dat_list_p_x_y_n_id_t',
-        f'NXentry/NXdetector/bank{bank:02}_events_dat_list_p_x_y_n_id_t/events',
+        (
+            f'NXentry/NXdetector/bank_{north_or_south}{number}_events_dat_list_p_x_y_n_id_t'
+            if north_or_south is not None
+            else f'NXentry/NXdetector/bank{number:02}_events_dat_list_p_x_y_n_id_t'
+        ),
+        (
+            f'NXentry/NXdetector/bank_{north_or_south}{number}_events_dat_list_p_x_y_n_id_t/events'
+            if north_or_south is not None
+            else f'NXentry/NXdetector/bank{number:02}_events_dat_list_p_x_y_n_id_t/events'  # noqa: E501
+        ),
         'NXentry/simulation/Param',
         positions['sampleMantid'],
         positions['PSC1'],
@@ -162,7 +171,10 @@ def _load_beer_mcstas(f, bank=1):
         'Rotation'
     ]
     detector_rotation = _find_h5(
-        f['/entry1/instrument/components'], f'.*nD_Mantid_?{bank}.*'
+        f['/entry1/instrument/components'],
+        f'.*nD_Mantid_?{north_or_south}_{number}.*'
+        if north_or_south is not None
+        else f'.*nD_Mantid_?{number}.*',
     )['Rotation']
 
     events = events[()]
@@ -286,7 +298,9 @@ def _not_between(x, a, b):
     return (x < a) | (b < x)
 
 
-def load_beer_mcstas(f: str | Path | h5py.File, bank: int) -> sc.DataArray:
+def load_beer_mcstas(
+    f: str | Path | h5py.File, bank: Literal['north', 'south'] | int
+) -> sc.DataArray:
     '''Load beer McStas data from a file to a
     data group with one data array for each bank.
     '''
@@ -294,7 +308,15 @@ def load_beer_mcstas(f: str | Path | h5py.File, bank: int) -> sc.DataArray:
         with h5py.File(f) as ff:
             return load_beer_mcstas(ff, bank=bank)
 
-    return _load_beer_mcstas(f, bank=bank)
+    if bank in {'north', 'south'}:
+        return sc.concat(
+            [
+                _load_beer_mcstas(f, north_or_south=bank, number=number)
+                for number in range(1, 13)
+            ],
+            dim='panel',
+        )
+    return _load_beer_mcstas(f, north_or_south=None, number=bank)
 
 
 def load_beer_mcstas_provider(
