@@ -14,7 +14,7 @@ from ess.beer.data import (
     mcstas_few_neutrons_3d_detector_example,
     mcstas_silicon_new_model,
 )
-from ess.beer.io import load_beer_mcstas
+from ess.beer.io import load_beer_mcstas, load_beer_mcstas_monitor
 from ess.beer.types import DetectorBank, DHKLList
 from ess.reduce.nexus.types import Filename, SampleRun
 from ess.reduce.time_of_flight.types import TofDetector
@@ -83,3 +83,11 @@ def test_can_load_3d_detector():
     load_beer_mcstas(mcstas_few_neutrons_3d_detector_example(), 'north')
     da = load_beer_mcstas(mcstas_few_neutrons_3d_detector_example(), 'south')
     assert 'panel' in da.dims
+
+
+def test_can_load_monitor():
+    da = load_beer_mcstas_monitor(mcstas_few_neutrons_3d_detector_example())
+    assert 'wavelength' in da.coords
+    assert 'position' in da.coords
+    assert da.coords['position'].dtype == sc.DType.vector3
+    assert da.coords['position'].unit == 'm'

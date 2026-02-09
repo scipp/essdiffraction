@@ -319,6 +319,45 @@ def load_beer_mcstas(
     return _load_beer_mcstas(f, north_or_south=None, number=bank)
 
 
+def load_beer_mcstas_monitor(f: str | Path | h5py.File):
+    if isinstance(f, str | Path):
+        with h5py.File(f) as ff:
+            return load_beer_mcstas_monitor(ff)
+    (
+        monitor,
+        wavelengths,
+        data,
+        errors,
+        ncount,
+    ) = _load_h5(
+        f,
+        'NXentry/NXdetector/Lmon_hereon_dat',
+        'NXentry/NXdetector/Lmon_hereon_dat/Wavelength__AA_',
+        'NXentry/NXdetector/Lmon_hereon_dat/data',
+        'NXentry/NXdetector/Lmon_hereon_dat/errors',
+        'NXentry/NXdetector/Lmon_hereon_dat/ncount',
+    )
+    da = sc.DataArray(
+        sc.array(
+            dims=['wavelength'], values=data[:], variances=errors[:], unit='counts'
+        ),
+        coords={
+            'wavelength': sc.array(
+                dims=['wavelength'], values=wavelengths[:], unit='angstrom'
+            ),
+            'ncount': sc.array(dims=['wavelength'], values=ncount[:], unit='counts'),
+        },
+    )
+    for name, value in monitor.attrs.items():
+        if name in ('position',):
+            da.coords[name] = sc.scalar(value.decode())
+
+    da.coords['position'] = sc.vector(
+        list(map(float, da.coords.pop('position').value.split(' '))), unit='m'
+    )
+    return da
+
+
 def load_beer_mcstas_provider(
     fname: Filename[SampleRun],
     bank: DetectorBank,
