@@ -40,6 +40,7 @@
    smoothing
    transform
    types
+   peaks
 ```
 
 ## DREAM
