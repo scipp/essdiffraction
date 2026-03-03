@@ -22,6 +22,9 @@ def cluster_events_by_streak(
     # adding them to the binned data coords achieves this.
     for coord in ('two_theta', 'Ltotal'):
         da.bins.coords[coord] = sc.bins_like(da, da.coords[coord])
+    # Making them scalar also keeps them after binning,
+    # but without having to store them for each event.
+    da.coords['tc'] = da.coords['tc'].mean()
 
     h = da.bins.concat().hist(coarse_d=1000)
     i_peaks, _ = find_peaks(
