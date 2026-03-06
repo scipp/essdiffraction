@@ -19,6 +19,7 @@ from ess.powder.types import (
     EmptyCanRun,
     KeepEvents,
     LookupTableRelativeErrorThreshold,
+    Measurement,
     PixelMaskFilename,
     Position,
     ReducerSoftware,
@@ -211,6 +212,10 @@ def DreamGeant4Workflow(*, run_norm: RunNormalization, **kwargs) -> sciline.Pipe
         AccumulatedProtonCharge[EmptyCanRun]: charge,
         CaveMonitorPosition: sc.vector([0.0, 0.0, -4220.0], unit='mm'),
         LookupTableRelativeErrorThreshold: 0.02,
+        # The GEANT4 files do not encode measurement information
+        Measurement[SampleRun]: Measurement[SampleRun](title=None),
+        Measurement[VanadiumRun]: Measurement[VanadiumRun](title=None),
+        Measurement[EmptyCanRun]: Measurement[EmptyCanRun](title=None),
     }
     for key, value in additional_parameters.items():
         wf[key] = value
