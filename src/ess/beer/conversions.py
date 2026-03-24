@@ -18,6 +18,7 @@ from .types import (
 
 def compute_tof_in_each_cluster(
     da: StreakClusteredData[RunType],
+    time0: WavelengthDefinitionChopperDelay,
     mod_period: ModulationPeriod,
 ) -> TofDetector[RunType]:
     """Fits a line through each cluster, the intercept of the line is t0.
@@ -42,7 +43,7 @@ def compute_tof_in_each_cluster(
     sin_theta_L = sc.sin(da.bins.coords['two_theta'] / 2) * da.bins.coords['Ltotal']
     t = time_of_arrival(
         da.bins.coords['event_time_offset'],
-        da.coords['tc'].to(unit=da.bins.coords['event_time_offset'].unit),
+        da.bins.coords['tc'],
     )
     for _ in range(15):
         s, t0 = _linear_regression_by_bin(sin_theta_L, t, da.data)
@@ -54,9 +55,25 @@ def compute_tof_in_each_cluster(
             too_far_from_center=(distance_to_self > max_distance_from_streak_line),
         )
 
-    da = da.assign_coords(t0=sc.values(t0))
-    da = da.bins.assign_coords(tof=(t - sc.values(t0)))
+    t0 = _round_t0_to_nearest_chopper_opening(sc.values(t0), mod_period, time0)
+    da = da.assign_coords(t0=t0)
+    da = da.bins.assign_coords(tof=(t - t0))
     return da
+
+
+def _round_t0_to_nearest_chopper_opening(
+    t0: sc.Variable,
+    mod_period: sc.Variable,
+    time0: sc.Variable,
+) -> sc.Variable:
+    out = t0.copy()
+    out -= time0
+    out /= mod_period
+    out += 0.5
+    sc.floor(out, out=out)
+    out *= mod_period
+    out += time0
+    return out
 
 
 def _linear_regression_by_bin(
