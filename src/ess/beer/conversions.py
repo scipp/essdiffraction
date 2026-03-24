@@ -43,7 +43,7 @@ def compute_tof_in_each_cluster(
     sin_theta_L = sc.sin(da.bins.coords['two_theta'] / 2) * da.bins.coords['Ltotal']
     t = time_of_arrival(
         da.bins.coords['event_time_offset'],
-        da.bins.coords['tc'],
+        da.bins.coords['frame_cutoff_time'],
     )
     for _ in range(15):
         s, t0 = _linear_regression_by_bin(sin_theta_L, t, da.data)
@@ -135,14 +135,14 @@ def _compute_d_given_list_of_peaks(
 
 def time_of_arrival(
     event_time_offset: sc.Variable,
-    tc: sc.Variable,
+    frame_cutoff_time: sc.Variable,
 ):
     """Does frame unwrapping for pulse shaping chopper modes.
 
-    Events before the "cutoff time" `tc` are assumed to come from the previous pulse."""
+    Events before the "cutoff time" are assumed to come from the previous pulse."""
     _eto = event_time_offset
     T = sc.scalar(1 / 14, unit='s').to(unit=_eto.unit)
-    tc = tc.to(unit=_eto.unit)
+    tc = frame_cutoff_time.to(unit=_eto.unit)
     return sc.where(_eto >= tc, _eto, _eto + T)
 
 
