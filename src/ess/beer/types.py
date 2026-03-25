@@ -13,19 +13,18 @@ from typing import NewType
 import sciline
 import scipp as sc
 
-from ess.reduce.nexus import types as nexus_t
-from ess.reduce.unwrap import types as unwrap_t
+from ess.reduce.nexus.types import Filename, RawDetector, RunType, SampleRun
+from ess.reduce.unwrap.types import WavelengthDetector
 
 
-class StreakClusteredData(sciline.Scope[nexus_t.RunType, sc.DataArray], sc.DataArray):
+class StreakClusteredData(sciline.Scope[RunType, sc.DataArray], sc.DataArray):
     """Detector data binned by streak"""
 
 
-RunType = nexus_t.RunType
-RawDetector = nexus_t.RawDetector
-Filename = nexus_t.Filename
-SampleRun = nexus_t.SampleRun
-WavelengthDetector = unwrap_t.WavelengthDetector
+RawDetector = RawDetector
+Filename = Filename
+SampleRun = SampleRun
+WavelengthDetector = WavelengthDetector
 
 
 class DetectorBank(Enum):
