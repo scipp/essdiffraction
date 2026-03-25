@@ -13,18 +13,18 @@ from typing import NewType
 import sciline
 import scipp as sc
 
-from ess.reduce.nexus.types import Filename, RawDetector, RunType, SampleRun
-from ess.reduce.time_of_flight.types import TofDetector
+from ess.reduce.nexus import types as nexus_t
+from ess.reduce.unwrap import types as unwrap_t
 
 
-class StreakClusteredData(sciline.Scope[RunType, sc.DataArray], sc.DataArray):
+class StreakClusteredData(sciline.Scope[nexus_t.RunType, sc.DataArray], sc.DataArray):
     """Detector data binned by streak"""
 
 
-RawDetector = RawDetector
-Filename = Filename
-SampleRun = SampleRun
-TofDetector = TofDetector
+RawDetector = nexus_t.RawDetector
+Filename = nexus_t.Filename
+SampleRun = nexus_t.SampleRun
+WavelengthDetector = unwrap_t.WavelengthDetector
 
 
 class DetectorBank(Enum):
@@ -34,7 +34,7 @@ class DetectorBank(Enum):
 
 TwoThetaLimits = NewType("TwoThetaLimits", tuple[sc.Variable, sc.Variable])
 
-TofCoordTransformGraph = NewType("TofCoordTransformGraph", dict)
+CoordTransformGraph = NewType("CoordTransformGraph", dict)
 GeometryCoordTransformGraph = NewType("GeometryCoordTransformGraph", dict)
 
 PulseLength = NewType("PulseLength", sc.Variable)
