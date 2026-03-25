@@ -33,7 +33,7 @@ def compute_wavelength_in_each_cluster(
        of the points in the cluster, and probably should belong to another cluster or
        are part of the background.
     3. Go back to 1) and iterate until convergence. A few iterations should be enough.
-    4. Finally, round the found intercept t0 to the closest chopper opening time.
+    4. Finally, round the estimated t0 to the closest known chopper opening time.
     """
     if isinstance(da, sc.DataGroup):
         return sc.DataGroup(
