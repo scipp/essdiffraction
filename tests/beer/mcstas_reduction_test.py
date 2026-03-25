@@ -21,9 +21,8 @@ from ess.beer.io import (
     load_beer_mcstas_monitor,
     mcstas_chopper_delay_from_mode_new_simulations,
 )
-from ess.beer.types import DetectorBank, DHKLList
+from ess.beer.types import DetectorBank, DHKLList, TofDetector
 from ess.reduce.nexus.types import Filename, SampleRun
-from ess.reduce.time_of_flight.types import TofDetector
 
 
 def test_can_reduce_using_known_peaks_workflow():
