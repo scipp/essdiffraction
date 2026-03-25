@@ -17,7 +17,7 @@ from ess.beer.data import (
 from ess.beer.io import load_beer_mcstas, load_beer_mcstas_monitor
 from ess.beer.types import DetectorBank, DHKLList
 from ess.reduce.nexus.types import Filename, SampleRun
-from ess.reduce.time_of_flight.types import WavelengthDetector
+from ess.reduce.unwrap.types import WavelengthDetector
 
 
 def test_can_reduce_using_known_peaks_workflow():

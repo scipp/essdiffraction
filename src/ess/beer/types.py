@@ -21,6 +21,7 @@ class StreakClusteredData(sciline.Scope[nexus_t.RunType, sc.DataArray], sc.DataA
     """Detector data binned by streak"""
 
 
+RunType = nexus_t.RunType
 RawDetector = nexus_t.RawDetector
 Filename = nexus_t.Filename
 SampleRun = nexus_t.SampleRun

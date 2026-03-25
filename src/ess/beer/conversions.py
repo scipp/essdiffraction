@@ -19,7 +19,7 @@ from .types import (
 def compute_wavelength_in_each_cluster(
     da: StreakClusteredData[RunType],
     mod_period: ModulationPeriod,
-    graph: CoordTransformGraph,
+    graph: GeometryCoordTransformGraph,
 ) -> WavelengthDetector[RunType]:
     """Fits a line through each cluster, the intercept of the line is t0.
     The line is fitted using linear regression with an outlier removal procedure.
