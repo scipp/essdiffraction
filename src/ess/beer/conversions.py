@@ -57,7 +57,8 @@ def compute_tof_in_each_cluster(
         )
 
     # The t0 estimate from fitting is influenced by peak overlap, background,
-    # and other factors that can make the estimate noisy and biased.
+    # and other factors that can make the estimate offset from the true
+    # chopper opening time that it should match.
     # We know the true chopper opening times, so instead of using the t0 estimte
     # directly we can round the estimate to the closest chopper opening time.
     # That way the t0 estimate becomes more robust and is guaranteed to correspond to
