@@ -56,6 +56,12 @@ def compute_tof_in_each_cluster(
             too_far_from_center=(distance_to_self > max_distance_from_streak_line),
         )
 
+    # The t0 estimate from fitting is influenced by peak overlap, background,
+    # and other factors that can make the estimate noisy and biased.
+    # We know the true chopper opening times, so instead of using the t0 estimte
+    # directly we can round the estimate to the closest chopper opening time.
+    # That way the t0 estimate becomes more robust and is guaranteed to correspond to
+    # a true chopper opening time.
     t0 = _round_t0_to_nearest_chopper_opening(sc.values(t0), mod_period, chopper_delay)
     da = da.assign_coords(t0=t0)
     da = da.bins.assign_coords(tof=(t - t0))
