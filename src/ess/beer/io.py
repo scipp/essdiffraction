@@ -179,11 +179,11 @@ def _load_beer_mcstas(f, north_or_south=None, number=None):
         positions['MCC'],
     )
     data = (
-        next(_find_all_h5(data_dir, f'.*{north_or_south}.*{number}'))
+        next(_find_all_h5(data_dir, f'.*{north_or_south}{number}'))
         if north_or_south is not None and number is not None
         else next(_find_all_h5(data_dir, f'.*{north_or_south}'))
         if north_or_south is not None
-        else next(_find_all_h5(data_dir, f'.*entry1.*{number}'))
+        else next(_find_all_h5(data_dir, f'/entry1.*bank.*{number}'))
     )
     events = data['events']
 
@@ -331,7 +331,7 @@ def load_beer_mcstas(f: str | Path | h5py.File, bank: DetectorBank) -> sc.DataAr
         with h5py.File(f) as ff:
             return load_beer_mcstas(ff, bank=bank)
 
-    if len(list(_find_all_h5(f['/entry1/data'], '.', nxclass='NXdata'))) < 8:
+    if len(list(_find_all_h5(f['/entry1/data'], '.*bank', nxclass='NXdata'))) < 8:
         # If we don't find ~13 detectors, then assume the detectors are 2D
         if len(list(_find_all_h5(f['/entry1/data'], '.*south', nxclass='NXdata'))) > 0:
             return _load_beer_mcstas(f, north_or_south=bank.name)
