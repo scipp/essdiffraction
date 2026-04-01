@@ -2,25 +2,26 @@ import scipp as sc
 import scipp.constants
 from scippneutron.conversion import graph
 
+from ess.powder.types import ElasticCoordTransformGraph, RunType
+
 from .types import (
     DHKLList,
     GeometryCoordTransformGraph,
     ModulationPeriod,
     PulseLength,
     RawDetector,
-    RunType,
     StreakClusteredData,
-    TofCoordTransformGraph,
-    TofDetector,
     WavelengthDefinitionChopperDelay,
+    WavelengthDetector,
 )
 
 
-def compute_tof_in_each_cluster(
+def compute_wavelength_in_each_cluster(
     da: StreakClusteredData[RunType],
     chopper_delay: WavelengthDefinitionChopperDelay,
     mod_period: ModulationPeriod,
-) -> TofDetector[RunType]:
+    graph: GeometryCoordTransformGraph,
+) -> WavelengthDetector[RunType]:
     """Fits a line through each cluster, the intercept of the line is t0.
     The line is fitted using linear regression with an outlier removal procedure.
 
@@ -37,7 +38,10 @@ def compute_tof_in_each_cluster(
     """
     if isinstance(da, sc.DataGroup):
         return sc.DataGroup(
-            {k: compute_tof_in_each_cluster(v, mod_period) for k, v in da.items()}
+            {
+                k: compute_wavelength_in_each_cluster(v, mod_period)
+                for k, v in da.items()
+            }
         )
 
     max_distance_from_streak_line = mod_period / 3
@@ -185,17 +189,48 @@ def _tof_from_dhkl(
     return out
 
 
+def t0_estimate(
+    wavelength_estimate: sc.Variable,
+    L0: sc.Variable,
+    Ltotal: sc.Variable,
+) -> sc.Variable:
+    """Estimates the time-at-chopper by assuming the wavelength."""
+    return (
+        sc.constants.m_n
+        / sc.constants.h
+        * wavelength_estimate
+        * (L0 - Ltotal).to(unit=wavelength_estimate.unit)
+    ).to(unit='s')
+
+
+def tof_from_t0_estimate_graph(
+    da: RawDetector[RunType],
+    gg: GeometryCoordTransformGraph,
+) -> ElasticCoordTransformGraph[RunType]:
+    """Graph for computing ``wavelength`` in pulse shaping chopper modes."""
+    return {
+        **gg,
+        't0': t0_estimate,
+        'tof': lambda time_of_arrival, t0: time_of_arrival - t0,
+        'time_of_arrival': time_of_arrival,
+    }
+
+
 def geometry_graph() -> GeometryCoordTransformGraph:
-    return graph.beamline.beamline(scatter=True)
+    return {
+        **graph.beamline.beamline(scatter=True),
+        **graph.tof.elastic("tof"),
+    }
 
 
 def tof_from_known_dhkl_graph(
+    da: RawDetector[RunType],
     mod_period: ModulationPeriod,
     pulse_length: PulseLength,
     chopper_delay: WavelengthDefinitionChopperDelay,
     dhkl_list: DHKLList,
     gg: GeometryCoordTransformGraph,
-) -> TofCoordTransformGraph:
+) -> ElasticCoordTransformGraph[RunType]:
     """Graph computing ``tof`` in modulation chopper modes using
     list of peak positions."""
 
@@ -221,7 +256,6 @@ def tof_from_known_dhkl_graph(
 
     return {
         **gg,
-        **graph.tof.elastic("tof"),
         'pulse_length': lambda: pulse_length,
         'mod_period': lambda: mod_period,
         'chopper_delay': lambda: chopper_delay,
@@ -232,56 +266,21 @@ def tof_from_known_dhkl_graph(
     }
 
 
-def t0_estimate(
-    wavelength_estimate: sc.Variable,
-    L0: sc.Variable,
-    Ltotal: sc.Variable,
-) -> sc.Variable:
-    """Estimates the time-at-chopper by assuming the wavelength."""
-    return (
-        sc.constants.m_n
-        / sc.constants.h
-        * wavelength_estimate
-        * (L0 - Ltotal).to(unit=wavelength_estimate.unit)
-    ).to(unit='s')
-
-
-def _tof_from_t0(
-    time_of_arrival: sc.Variable,
-    t0: sc.Variable,
-) -> sc.Variable:
-    """Computes time-of-flight by subtracting a start time."""
-    return time_of_arrival - t0
-
-
-def tof_from_t0_estimate_graph(
-    gg: GeometryCoordTransformGraph,
-) -> TofCoordTransformGraph:
-    """Graph for computing ``tof`` in pulse shaping chopper modes."""
-    return {
-        **gg,
-        **graph.tof.elastic("tof"),
-        't0': t0_estimate,
-        'tof': _tof_from_t0,
-        'time_of_arrival': time_of_arrival,
-    }
-
-
-def compute_tof(
-    da: RawDetector[RunType], graph: TofCoordTransformGraph
-) -> TofDetector[RunType]:
-    """Uses the transformation graph to compute ``tof``."""
-    return da.transform_coords(('tof',), graph=graph)
+def wavelength_detector(
+    da: RawDetector[RunType], graph: ElasticCoordTransformGraph[RunType]
+) -> WavelengthDetector[RunType]:
+    """Applies the transformation graph to compute ``wavelength``."""
+    return da.transform_coords(('wavelength',), graph=graph)
 
 
 convert_from_known_peaks_providers = (
     geometry_graph,
     tof_from_known_dhkl_graph,
-    compute_tof,
+    wavelength_detector,
 )
 convert_pulse_shaping = (
     geometry_graph,
     tof_from_t0_estimate_graph,
-    compute_tof,
+    wavelength_detector,
 )
-providers = (compute_tof_in_each_cluster, geometry_graph)
+providers = (compute_wavelength_in_each_cluster, geometry_graph)
