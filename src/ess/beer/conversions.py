@@ -2,14 +2,14 @@ import scipp as sc
 import scipp.constants
 from scippneutron.conversion import graph
 
+from ess.powder.types import ElasticCoordTransformGraph, RunType
+
 from .types import (
-    CoordTransformGraph,
     DHKLList,
     GeometryCoordTransformGraph,
     ModulationPeriod,
     PulseLength,
     RawDetector,
-    RunType,
     StreakClusteredData,
     WavelengthDefinitionChopperDelay,
     WavelengthDetector,
@@ -182,8 +182,9 @@ def t0_estimate(
 
 
 def tof_from_t0_estimate_graph(
+    da: RawDetector[RunType],
     gg: GeometryCoordTransformGraph,
-) -> CoordTransformGraph:
+) -> ElasticCoordTransformGraph[RunType]:
     """Graph for computing ``wavelength`` in pulse shaping chopper modes."""
     return {
         **gg,
@@ -201,12 +202,13 @@ def geometry_graph() -> GeometryCoordTransformGraph:
 
 
 def tof_from_known_dhkl_graph(
+    da: RawDetector[RunType],
     mod_period: ModulationPeriod,
     pulse_length: PulseLength,
     time0: WavelengthDefinitionChopperDelay,
     dhkl_list: DHKLList,
     gg: GeometryCoordTransformGraph,
-) -> CoordTransformGraph:
+) -> ElasticCoordTransformGraph[RunType]:
     """Graph computing ``tof`` in modulation chopper modes using
     list of peak positions."""
 
@@ -243,7 +245,7 @@ def tof_from_known_dhkl_graph(
 
 
 def wavelength_detector(
-    da: RawDetector[RunType], graph: CoordTransformGraph
+    da: RawDetector[RunType], graph: ElasticCoordTransformGraph[RunType]
 ) -> WavelengthDetector[RunType]:
     """Applies the transformation graph to compute ``wavelength``."""
     return da.transform_coords(('wavelength',), graph=graph)

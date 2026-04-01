@@ -34,7 +34,6 @@ class DetectorBank(Enum):
 
 TwoThetaLimits = NewType("TwoThetaLimits", tuple[sc.Variable, sc.Variable])
 
-CoordTransformGraph = NewType("CoordTransformGraph", dict)
 GeometryCoordTransformGraph = NewType("GeometryCoordTransformGraph", dict)
 
 PulseLength = NewType("PulseLength", sc.Variable)
