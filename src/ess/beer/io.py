@@ -14,11 +14,9 @@ from ess.powder.types import CaveMonitor, RunType, WavelengthMonitor
 from .types import (
     DetectorBank,
     Filename,
-    GeometryCoordTransformGraph,
     ModulationPeriod,
     RawDetector,
     SampleRun,
-    TwoThetaLimits,
     WavelengthDefinitionChopperDelay,
 )
 
@@ -316,10 +314,6 @@ def _load_beer_mcstas(f, north_or_south=None, number=None):
     return da
 
 
-def _not_between(x, a, b):
-    return (x < a) | (b < x)
-
-
 def load_beer_mcstas(f: str | Path | h5py.File, bank: DetectorBank) -> sc.DataArray:
     '''Load beer McStas data from a file to a data array.'''
     if not isinstance(bank, DetectorBank):
@@ -403,15 +397,8 @@ def load_beer_mcstas_monitor(f: str | Path | h5py.File):
 def load_beer_mcstas_provider(
     fname: Filename[RunType],
     bank: DetectorBank,
-    two_theta_limits: TwoThetaLimits,
-    graph: GeometryCoordTransformGraph,
 ) -> RawDetector[RunType]:
-    da = load_beer_mcstas(fname, bank)
-    da = da.transform_coords(['two_theta'], graph=graph)
-    da = da.assign_masks(
-        two_theta=_not_between(da.coords['two_theta'], *two_theta_limits)
-    )
-    return da
+    return load_beer_mcstas(fname, bank)
 
 
 def load_beer_mcstas_monitor_provider(
