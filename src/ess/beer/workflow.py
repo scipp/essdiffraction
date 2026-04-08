@@ -24,15 +24,10 @@ from .conversions import providers as conversion_providers
 from .io import mcstas_modulation_period_from_mode, mcstas_providers
 from .types import (
     PulseLength,
-    TwoThetaLimits,
 )
 
 default_parameters = {
     PulseLength: sc.scalar(0.003, unit='s'),
-    TwoThetaLimits: (
-        sc.scalar(75, unit='deg').to(unit='rad', dtype='float64'),
-        sc.scalar(105, unit='deg').to(unit='rad', dtype='float64'),
-    ),
 }
 
 
