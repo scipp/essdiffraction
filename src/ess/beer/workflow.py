@@ -80,7 +80,8 @@ def BeerPowderWorkflow(
     run_norm:
         Select how to normalize each run (sample, vanadium, etc.).
     kwargs:
-        Additional keyword arguments are forwarded to the base :func:`GenericWorkflow`
+        Additional keyword arguments are forwarded to the base
+        :func:`GenericUnwrapWorkflow`.
 
     Returns
     -------
