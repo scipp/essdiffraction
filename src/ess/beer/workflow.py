@@ -73,19 +73,19 @@ def BeerPowderWorkflow(
     *, run_norm: RunNormalization = RunNormalization.monitor_integrated, **kwargs
 ) -> sl.Pipeline:
     """
-    Dream powder workflow with default parameters.
+    Beer powder workflow with default parameters.
 
     Parameters
     ----------
     run_norm:
         Select how to normalize each run (sample, vanadium, etc.).
     kwargs:
-        Additional keyword arguments are forwarded to the base :func:`DreamWorkflow`.
+        Additional keyword arguments are forwarded to the base :func:`GenericWorkflow`
 
     Returns
     -------
     :
-        A workflow object for DREAM.
+        A workflow object for BEER.
     """
     wf = GenericUnwrapWorkflow(
         run_types=[SampleRun, VanadiumRun, EmptyCanRun],
