@@ -288,8 +288,9 @@ def _load_beer_mcstas(f, north_or_south=None, number=None):
     # some entry in the Nexus file.
     da.coords['source_position'] = da.coords['sample_position'] - incident_beam
 
-    # L0 is the total length of the instrument
-    da.coords['L0'] = L1 + L2 + sc.norm(da.coords['chopper_position'])
+    da.coords['moderator_to_detector_distance'] = (
+        L1 + L2 + sc.norm(da.coords['chopper_position'])
+    )
 
     t = da.bins.coords['t']
     da.bins.coords['event_time_offset'] = t % sc.scalar(1 / 14, unit='s').to(
@@ -304,7 +305,7 @@ def _load_beer_mcstas(f, north_or_south=None, number=None):
         sc.constants.m_n
         / sc.constants.h
         * da.coords['wavelength_estimate']
-        * da.coords['L0'].min().to(unit='angstrom')
+        * da.coords['moderator_to_detector_distance'].min().to(unit='angstrom')
     ).to(unit='s') - sc.scalar(1 / 14, unit='s') / 2
 
     del da.coords['x']

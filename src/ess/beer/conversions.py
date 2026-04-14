@@ -114,7 +114,7 @@ def _compute_d_given_list_of_peaks(
     theta: sc.Variable,
     dhkl_list: sc.Variable,
     pulse_length: sc.Variable,
-    L0: sc.Variable,
+    moderator_to_detector_distance: sc.Variable,
 ) -> sc.Variable:
     """Determines the ``d_hkl`` peak each event belongs to,
     given a list of known peaks."""
@@ -127,9 +127,12 @@ def _compute_d_given_list_of_peaks(
     )
     dtfound = sc.full_like(time_of_arrival, value=float('nan'), dtype='float64')
 
-    const = (2 * sinth * L0 / (scipp.constants.h / scipp.constants.m_n)).to(
-        unit=f'{time_of_arrival.unit}/angstrom'
-    )
+    const = (
+        2
+        * sinth
+        * moderator_to_detector_distance
+        / (scipp.constants.h / scipp.constants.m_n)
+    ).to(unit=f'{time_of_arrival.unit}/angstrom')
     for dhkl in dhkl_list:
         dt = sc.abs(t - dhkl * const)
         dt_in_range = dt < pulse_length / 2
@@ -191,7 +194,7 @@ def _tof_from_dhkl(
 
 def t0_estimate(
     wavelength_estimate: sc.Variable,
-    L0: sc.Variable,
+    moderator_to_detector_distance: sc.Variable,
     Ltotal: sc.Variable,
 ) -> sc.Variable:
     """Estimates the time-at-chopper by assuming the wavelength."""
@@ -199,7 +202,7 @@ def t0_estimate(
         sc.constants.m_n
         / sc.constants.h
         * wavelength_estimate
-        * (L0 - Ltotal).to(unit=wavelength_estimate.unit)
+        * (moderator_to_detector_distance - Ltotal).to(unit=wavelength_estimate.unit)
     ).to(unit='s')
 
 
@@ -238,7 +241,7 @@ def tof_from_known_dhkl_graph(
         time_of_arrival: sc.Variable,
         theta: sc.Variable,
         pulse_length: sc.Variable,
-        L0: sc.Variable,
+        moderator_to_detector_distance: sc.Variable,
     ):
         """To capture dhkl_list, otherwise it causes an error when
         ``.transform_coords`` is called unless it is called with
@@ -250,7 +253,7 @@ def tof_from_known_dhkl_graph(
             time_of_arrival=time_of_arrival,
             theta=theta,
             pulse_length=pulse_length,
-            L0=L0,
+            moderator_to_detector_distance=moderator_to_detector_distance,
             dhkl_list=dhkl_list,
         )
 
