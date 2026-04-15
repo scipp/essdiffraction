@@ -194,15 +194,16 @@ def _tof_from_dhkl(
 
 def t0_estimate(
     wavelength_estimate: sc.Variable,
-    moderator_to_detector_distance: sc.Variable,
-    Ltotal: sc.Variable,
+    source_to_wavelength_definition_chopper_distance: sc.Variable,
 ) -> sc.Variable:
     """Estimates the time-at-chopper by assuming the wavelength."""
     return (
         sc.constants.m_n
         / sc.constants.h
         * wavelength_estimate
-        * (moderator_to_detector_distance - Ltotal).to(unit=wavelength_estimate.unit)
+        * source_to_wavelength_definition_chopper_distance.to(
+            unit=wavelength_estimate.unit
+        )
     ).to(unit='s')
 
 

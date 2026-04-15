@@ -291,6 +291,9 @@ def _load_beer_mcstas(f, north_or_south=None, number=None):
     da.coords['moderator_to_detector_distance'] = (
         L1 + L2 + sc.norm(da.coords['chopper_position'])
     )
+    da.coords['source_to_wavelength_definition_chopper_distance'] = sc.norm(
+        da.coords['chopper_position']
+    )
 
     t = da.bins.coords['t']
     da.bins.coords['event_time_offset'] = t % sc.scalar(1 / 14, unit='s').to(
