@@ -196,7 +196,11 @@ def t0_estimate(
     wavelength_estimate: sc.Variable,
     source_to_wavelength_definition_chopper_distance: sc.Variable,
 ) -> sc.Variable:
-    """Estimates the time-at-chopper by assuming the wavelength."""
+    """
+    Computes the time a neutron reaches a chopper at
+    ``source_to_wavelength_chopper_distance`` distance from the source
+    if it has wavelength ``wavelength_estimate``.
+    """
     return (
         sc.constants.m_n
         / sc.constants.h
