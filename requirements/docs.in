@@ -12,6 +12,7 @@ sphinx
 sphinx-autodoc-typehints
 sphinx-copybutton
 sphinx-design
+sphinx-reredirects
 sphinxcontrib-bibtex
 
 # needed by pandas < 3.0

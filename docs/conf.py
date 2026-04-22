@@ -32,6 +32,7 @@ extensions = [
     'sphinx_autodoc_typehints',
     'sphinx_copybutton',
     'sphinx_design',
+    'sphinx_reredirects',
     'sphinxcontrib.autodoc_pydantic',
     'sphinxcontrib.bibtex',
     'nbsphinx',
@@ -294,3 +295,10 @@ linkcheck_ignore = [
 # -- Options for bibtex ---------------------------------------------------
 bibtex_bibfiles = ["bibliography.bib"]
 bibtex_reference_style = "label"
+
+
+# -- Redirect to new docs --------------------------------------------------
+
+redirects = {
+    "*": "https://scipp.github.io/ess/diffraction/$source.html",
+}
